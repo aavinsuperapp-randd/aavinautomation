@@ -156,7 +156,7 @@ document.addEventListener('DOMContentLoaded', () => {
             automationsList.innerHTML = `
                 <div class="empty-state">
                     <h4>No automations yet</h4>
-                    <p>Save your first AskEVA automation using the editor above.</p>
+                    <p>Save your first automation using the editor above.</p>
                 </div>
             `;
             return;

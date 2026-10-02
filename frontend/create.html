@@ -3,69 +3,211 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create Automation - WhatsApp Automation</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <title>Create Automation - AAVIN WhatsApp Automation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="css/style.css">
     <link rel="stylesheet" href="css/dashboard.css">
     <link rel="stylesheet" href="css/create.css">
 </head>
 <body>
-    <div class="dashboard-layout">
-        <aside class="sidebar">
-            <div class="brand">
-                <h2>WA Automation</h2>
+    <!-- Mobile Header (Visible on screens <= 768px) -->
+    <header class="mobile-header">
+        <a href="dashboard.html" class="mobile-brand">
+            <img src="aavin-logo.png" alt="AAVIN" class="mobile-logo">
+            <div class="mobile-brand-text">
+                <span class="brand-title">AAVIN</span>
+                <span class="brand-sub">AUTOMATION</span>
             </div>
+        </a>
+        <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open Navigation Menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Translucent Overlay for Mobile Sidebar Drawer -->
+    <div id="mobileOverlay" class="mobile-overlay"></div>
+
+    <div class="dashboard-layout">
+        <!-- Fixed Desktop Sidebar / Mobile Off-canvas Drawer -->
+        <aside class="sidebar">
+            <div class="brand-header-sidebar">
+                <a href="dashboard.html" class="brand-logo-wrap">
+                    <img src="aavin-logo.png" alt="AAVIN" class="brand-logo-img">
+                    <div class="brand-title-group">
+                        <span class="brand-main-title">AAVIN</span>
+                        <span class="brand-sub-title">AUTOMATION</span>
+                    </div>
+                </a>
+                <button id="closeSidebarBtn" class="close-sidebar-btn" aria-label="Close Navigation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
             <nav class="nav-menu">
                 <a href="dashboard.html" class="nav-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
                     Dashboard
                 </a>
                 <a href="create.html" class="nav-item active">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom;"><path d="m18 16 4-4-4-4"></path><path d="m6 8-4 4 4 4"></path><path d="m14.5 4-5 16"></path></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
                     Create
                 </a>
                 <a href="send.html" class="nav-item">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
                     Send
                 </a>
             </nav>
+
             <div class="sidebar-footer">
-                <button id="logoutBtn" class="btn btn-outline">Logout</button>
+                <div class="system-status">
+                    <span class="status-indicator"></span>
+                    <div class="status-details">
+                        <span class="status-text">System Ready</span>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="btn btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </button>
             </div>
         </aside>
 
+        <!-- Main Content Area (Scrolls independently on desktop) -->
         <main class="main-content">
             <header class="topbar">
-                <h1>Create Automation</h1>
+                <div class="topbar-header-info">
+                    <h1>Create Automation</h1>
+                    <p>Save and manage your WhatsApp automation workflows.</p>
+                </div>
+                <div class="topbar-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: var(--aavin-green);">
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    Template Engine
+                </div>
             </header>
             
             <div class="content-area">
                 <div class="page-header">
-                    <h2>Save an AskEVA API request for later use.</h2>
-                    <p>Paste your complete cURL or request template below to save it as a reusable automation.</p>
+                    <h2>Save an API request for later use</h2>
+                    <p>Paste your complete cURL or request template below to save it into Supabase as a reusable automation.</p>
                 </div>
 
                 <div class="editor-container">
                     <div class="editor-header">
-                        <span>Request / cURL</span>
+                        <span>Request / cURL Payload</span>
+                        <span style="font-size: 11.5px; color: var(--text-muted); font-weight: 500;">JSON / cURL Syntax</span>
                     </div>
-                    <textarea id="curlEditor" class="curl-editor" placeholder="curl --location 'https://...' &#10;--header 'Content-Type: application/json' &#10;--data '{&#10;  ...&#10;}'"></textarea>
+                    <textarea id="curlEditor" class="curl-editor" placeholder="curl --location 'https://backend.askeva.io/v1/message/send-message' &#10;--header 'Content-Type: application/json' &#10;--data '{&#10;  &quot;template_name&quot;: &quot;aavin_milk_dispatch&quot;,&#10;  &quot;components&quot;: [ ... ]&#10;}'"></textarea>
                 </div>
 
                 <div class="actions-container">
-                    <button id="saveBtn" class="btn btn-success" disabled>Save Automation</button>
+                    <button id="saveBtn" class="btn btn-success" disabled>
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                            <polyline points="7 3 7 8 15 8"></polyline>
+                        </svg>
+                        Save Automation
+                    </button>
                 </div>
 
                 <hr class="section-divider">
 
-                <div class="automations-section">
-                    <h3>Automations</h3>
+                <div class="automations-section" id="automations">
+                    <h3>Saved Automations</h3>
                     <div id="automationsList" class="automations-list">
                         <!-- Automations injected via JS -->
-                        <div class="loading-state">Loading automations...</div>
+                        <div class="loading-state">Loading automations from Supabase...</div>
                     </div>
                 </div>
             </div>
+
+            <!-- Full Viewport Launch Event Section -->
+            <section class="launch-event-section" id="launchSection">
+                <div class="launch-ambient-glow glow-blue"></div>
+                <div class="launch-ambient-glow glow-green"></div>
+                <div class="launch-rings-wrapper">
+                    <div class="orbital-ring ring-outer"></div>
+                    <div class="orbital-ring ring-inner"></div>
+                </div>
+                
+                <div class="launch-content-container">
+                    <div class="launch-badge">
+                        <span class="launch-badge-dot"></span>
+                        AAVIN Next-Gen Automation
+                    </div>
+                    
+                    <h2 class="launch-headline-main">
+                        AAVIN <span class="gradient-text">AUTOMATION</span>
+                    </h2>
+                    
+                    <p class="launch-tagline">
+                        Smarter. Faster. Connected.
+                    </p>
+                    
+                    <p class="launch-description">
+                        Intelligent enterprise WhatsApp distribution platform engineered for dairy cooperatives, bulk member communications, and real-time operational reporting.
+                    </p>
+                    
+                    <div class="launch-features-grid">
+                        <div class="launch-feature-pill">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                            </svg>
+                            Instant WhatsApp Streaming
+                        </div>
+                        <div class="launch-feature-pill green-accent">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+                            </svg>
+                            Cloud Gateway
+                        </div>
+                        <div class="launch-feature-pill">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            Dynamic Excel Mapping
+                        </div>
+                        <div class="launch-feature-pill green-accent">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            100% Data Normalization
+                        </div>
+                    </div>
+                    
+                    <a href="send.html" class="launch-cta-btn">
+                        Get Started
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
+                </div>
+            </section>
         </main>
     </div>
 
@@ -74,12 +216,12 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3>Save Automation</h3>
-                <p>Give this automation a name so you can easily select it later.</p>
+                <p>Give this automation a descriptive name to select it in the Send pipeline.</p>
             </div>
             <div class="modal-body">
                 <div class="form-group">
                     <label for="automationName">Automation Name</label>
-                    <input type="text" id="automationName" placeholder="e.g. Aavin Tamil Milk Report">
+                    <input type="text" id="automationName" placeholder="e.g. AAVIN Daily Milk Collection Dispatch">
                 </div>
                 <div id="modalError" class="error-message hidden"></div>
             </div>
@@ -134,5 +276,6 @@
 
     <script src="js/config.js"></script>
     <script src="js/create.js"></script>
+    <script src="js/navigation.js"></script>
 </body>
 </html>

@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Send Automation - WhatsApp Automation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/send.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="dashboard-layout">
+        <aside class="sidebar">
+            <div class="brand">
+                <h2>WA Automation</h2>
+            </div>
+            <nav class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom;"><rect x="3" y="3" width="7" height="9"></rect><rect x="14" y="3" width="7" height="5"></rect><rect x="14" y="12" width="7" height="9"></rect><rect x="3" y="16" width="7" height="5"></rect></svg>
+                    Dashboard
+                </a>
+                <a href="create.html" class="nav-item">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom;"><path d="m18 16 4-4-4-4"></path><path d="m6 8-4 4 4 4"></path><path d="m14.5 4-5 16"></path></svg>
+                    Create
+                </a>
+                <a href="send.html" class="nav-item active">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 8px; vertical-align: text-bottom;"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+                    Send
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <button id="logoutBtn" class="btn btn-outline">Logout</button>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="topbar">
+                <h1>Send Automation</h1>
+            </header>
+            
+            <div class="content-area">
+                
+                <!-- Step 1: Upload Excel -->
+                <div id="step1" class="step-container active">
+                    <div class="step-header">
+                        <h2>1. Upload Excel</h2>
+                        <p>Upload an Excel file to get started</p>
+                    </div>
+                    
+                    <div id="uploadArea" class="upload-area">
+                        <input type="file" id="fileInput" accept=".xlsx, .xls" class="hidden">
+                        <div class="upload-icon">📄</div>
+                        <h3>Upload Excel</h3>
+                        <p>Click to browse or drag and drop a file</p>
+                    </div>
+                    
+                    <div id="fileInfoCard" class="file-info-card hidden">
+                        <div class="file-details">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#16A34A" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            <div>
+                                <h4 id="fileNameDisplay">Aavin_Milk_Report.xlsx</h4>
+                                <p id="rowCountDisplay">554 rows</p>
+                            </div>
+                        </div>
+                        <button id="changeFileBtn" class="btn btn-outline btn-sm">Change File</button>
+                    </div>
+                </div>
+
+                <!-- Step 2 & Beyond: Workflow Form -->
+                <div id="workflowForm" class="workflow-form hidden">
+                    
+                    <div class="step-container">
+                        <div class="step-header">
+                            <h2>2. Select Automation</h2>
+                        </div>
+                        <div class="form-group">
+                            <select id="automationSelect" class="form-control">
+                                <option value="">Select automation...</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="mappingSection" class="hidden">
+                        <div class="step-container">
+                            <div class="step-header">
+                                <h2>3. WhatsApp Number Column</h2>
+                            </div>
+                            <div class="form-group">
+                                <select id="whatsappColumnSelect" class="form-control">
+                                    <option value="">Select column...</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="step-container">
+                            <div class="step-header">
+                                <h2>4. Map Variables</h2>
+                            </div>
+                            <div id="variableMappingContainer" class="mapping-container">
+                                <!-- Dynamic variables go here -->
+                            </div>
+                        </div>
+
+                        <div class="actions-container" style="margin-top: 32px; display: flex; flex-direction: column; align-items: flex-end;">
+                            <div id="validationMessage" class="error-message hidden" style="margin-bottom: 16px; width: 100%;"></div>
+                            <button id="previewBtn" class="btn btn-success">Preview Data</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Preview Section -->
+                <div id="previewSection" class="preview-section hidden">
+                    <hr class="section-divider" style="margin: 0 0 24px 0;">
+                    <div class="step-header" style="display: flex; justify-content: space-between; align-items: flex-end; flex-wrap: wrap; gap: 16px;">
+                        <div>
+                            <h2>Mapped Data Preview</h2>
+                            <p>Verify your data before sending.</p>
+                        </div>
+                        <div class="preview-summary" id="previewSummary">
+                            <!-- Summary injected via JS -->
+                        </div>
+                    </div>
+                    
+                    <div class="table-container">
+                        <table id="previewTable" class="preview-table">
+                            <thead id="previewThead">
+                            </thead>
+                            <tbody id="previewTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="pagination" id="paginationControls">
+                        <button id="prevPageBtn" class="btn btn-outline btn-sm" disabled>Previous</button>
+                        <span id="pageIndicator" class="page-indicator">Page 1 of 1</span>
+                        <button id="nextPageBtn" class="btn btn-outline btn-sm" disabled>Next</button>
+                    </div>
+
+                    <div class="actions-container" style="margin-top: 32px; display: flex; justify-content: flex-end;">
+                        <button id="finalSendBtn" class="btn btn-success">Send to WhatsApp</button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- Confirm Send Modal -->
+    <div id="confirmSendModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Confirm WhatsApp Distribution</h3>
+            </div>
+            <div class="modal-body">
+                <p>You are about to send messages to:</p>
+                <h4 id="confirmRowsCount" style="margin: 16px 0; font-size: 24px; color: var(--primary-color);">0 recipients</h4>
+                <p>Automation: <strong id="confirmAutoName"></strong></p>
+                <p style="margin-top: 16px;">Do you want to continue?</p>
+            </div>
+            <div class="modal-footer">
+                <button id="cancelSendBtn" class="btn btn-outline">Cancel</button>
+                <button id="executeSendBtn" class="btn btn-success">Confirm & Send</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Modal -->
+    <div id="progressModal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Sending messages...</h3>
+            </div>
+            <div class="modal-body text-center">
+                <div class="progress-bar-container">
+                    <div id="progressBar" class="progress-bar"></div>
+                </div>
+                <h4 id="progressText" style="margin: 16px 0;">0 / 0 processed</h4>
+                
+                <div class="progress-stats">
+                    <div class="stat-box success">
+                        <span class="stat-label">Successful</span>
+                        <span id="progressSuccess" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box fail">
+                        <span class="stat-label">Failed</span>
+                        <span id="progressFail" class="stat-value">0</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Summary Modal -->
+    <div id="summaryModal" class="modal hidden">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>Sending Completed</h3>
+            </div>
+            <div class="modal-body">
+                <div class="progress-stats" style="margin-bottom: 24px;">
+                    <div class="stat-box">
+                        <span class="stat-label">Total Rows</span>
+                        <span id="summaryTotal" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box success">
+                        <span class="stat-label">Successful</span>
+                        <span id="summarySuccess" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-box fail">
+                        <span class="stat-label">Failed</span>
+                        <span id="summaryFail" class="stat-value">0</span>
+                    </div>
+                </div>
+
+                <div id="failedRowsContainer" class="hidden">
+                    <h4>Failed Rows</h4>
+                    <div class="table-container" style="max-height: 300px; overflow-y: auto;">
+                        <table class="preview-table">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>WhatsApp Number</th>
+                                    <th>Reason</th>
+                                </tr>
+                            </thead>
+                            <tbody id="failedRowsTbody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button id="doneBtn" class="btn btn-success">Done</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="js/config.js"></script>
+    <script src="js/send.js"></script>
+</body>
+</html>

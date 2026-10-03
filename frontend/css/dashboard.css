@@ -669,6 +669,133 @@
     transform: translateY(0) scale(0.98);
 }
 
+/* ── Wet Paint Button (White Background + Blue Text + Dripping Paint) ── */
+.launch-cta-btn.wet-paint-btn {
+    position: relative;
+    background: #ffffff !important;
+    color: #0284c7 !important;
+    border: 1.5px solid rgba(2, 132, 199, 0.22);
+    box-shadow: 0 10px 28px -4px rgba(2, 132, 199, 0.26), 0 4px 10px rgba(0, 0, 0, 0.05);
+    overflow: visible;
+    padding: 16px 40px;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    border-radius: var(--radius-full);
+    text-transform: uppercase;
+    text-decoration: none;
+    transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.launch-cta-btn.wet-paint-btn:hover {
+    background: #ffffff !important;
+    color: #0369a1 !important;
+    border-color: rgba(2, 132, 199, 0.45);
+    box-shadow: 0 14px 34px -4px rgba(2, 132, 199, 0.36), 0 6px 14px rgba(0, 0, 0, 0.08);
+    transform: translateY(-2px);
+}
+
+.launch-cta-btn.wet-paint-btn:active {
+    transform: translateY(0);
+    box-shadow: 0 6px 18px -2px rgba(2, 132, 199, 0.22);
+}
+
+.launch-cta-btn.wet-paint-btn .wp-content {
+    position: relative;
+    z-index: 3;
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.launch-cta-btn.wet-paint-btn .wp-content svg {
+    color: #0284c7;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+
+.launch-cta-btn.wet-paint-btn:hover .wp-content svg {
+    color: #0369a1;
+    transform: translateX(3px);
+}
+
+/* Drip element wrapper */
+.launch-cta-btn.wet-paint-btn .wp-drip {
+    position: absolute;
+    top: 98%;
+    transform-origin: top center;
+    pointer-events: none;
+    z-index: 2;
+    animation: wpDripScale 2s ease-in infinite;
+    animation-delay: var(--drip-delay, 0s);
+}
+
+/* Drip stem */
+.launch-cta-btn.wet-paint-btn .wp-stem {
+    display: block;
+    width: 8px;
+    background: #ffffff;
+    border-radius: 0 0 9999px 9999px;
+    box-shadow: 0 2px 5px rgba(2, 132, 199, 0.15);
+}
+
+/* Side curve SVGs that blend the drip seamlessly into the button */
+.launch-cta-btn.wet-paint-btn .wp-curve {
+    position: absolute;
+    top: 0;
+    pointer-events: none;
+}
+
+.launch-cta-btn.wet-paint-btn .wp-curve-r {
+    left: 100%;
+}
+
+.launch-cta-btn.wet-paint-btn .wp-curve-l {
+    right: 100%;
+    transform: rotate(90deg);
+}
+
+/* Falling detached droplet */
+.launch-cta-btn.wet-paint-btn .wp-drop {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 2px 5px rgba(2, 132, 199, 0.15);
+    animation: wpDropFall 2s ease-in infinite;
+    animation-delay: var(--drip-delay, 0s);
+}
+
+/* Keyframes matching Framer Motion easeIn scaleY & falling droplet */
+@keyframes wpDripScale {
+    0% {
+        transform: scaleY(0.75);
+    }
+    25% {
+        transform: scaleY(1.05);
+    }
+    100% {
+        transform: scaleY(0.75);
+    }
+}
+
+@keyframes wpDropFall {
+    0% {
+        transform: translateY(-6px);
+        opacity: 1;
+    }
+    60% {
+        transform: translateY(30px);
+        opacity: 0.85;
+    }
+    100% {
+        transform: translateY(48px);
+        opacity: 0;
+    }
+}
+
 /* Animations */
 @keyframes fadeInDown {
     from {

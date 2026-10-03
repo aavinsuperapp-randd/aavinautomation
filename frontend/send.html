@@ -294,12 +294,39 @@
                         </div>
                     </div>
                     
-                    <a href="#step1" class="launch-cta-btn">
-                        Get Started
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="12" y1="19" x2="12" y2="5"></line>
-                            <polyline points="5 12 12 5 19 12"></polyline>
-                        </svg>
+                    <a href="#step1" id="launchGetStartedBtn" class="launch-cta-btn wet-paint-btn">
+                        <span class="wp-content">
+                            Get Started
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="12" y1="19" x2="12" y2="5"></line>
+                                <polyline points="5 12 12 5 19 12"></polyline>
+                            </svg>
+                        </span>
+                        <!-- Wet Paint Animated Drips -->
+                        <span class="wp-drip" style="left: 14%; --drip-delay: 0.5s;">
+                            <span class="wp-stem" style="height: 24px;"></span>
+                            <svg class="wp-curve wp-curve-r" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <svg class="wp-curve wp-curve-l" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <span class="wp-drop"></span>
+                        </span>
+                        <span class="wp-drip" style="left: 38%; --drip-delay: 3s;">
+                            <span class="wp-stem" style="height: 20px;"></span>
+                            <svg class="wp-curve wp-curve-r" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <svg class="wp-curve wp-curve-l" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <span class="wp-drop"></span>
+                        </span>
+                        <span class="wp-drip" style="left: 64%; --drip-delay: 4.25s;">
+                            <span class="wp-stem" style="height: 12px;"></span>
+                            <svg class="wp-curve wp-curve-r" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <svg class="wp-curve wp-curve-l" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <span class="wp-drop"></span>
+                        </span>
+                        <span class="wp-drip" style="left: 84%; --drip-delay: 1.5s;">
+                            <span class="wp-stem" style="height: 16px;"></span>
+                            <svg class="wp-curve wp-curve-r" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <svg class="wp-curve wp-curve-l" width="6" height="6" viewBox="0 0 6 6" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.4 0H0V5.4C0 2.41765 2.41766 0 5.4 0Z" fill="#ffffff"/></svg>
+                            <span class="wp-drop"></span>
+                        </span>
                     </a>
                 </div>
             </section>
@@ -325,80 +352,73 @@
         </div>
     </div>
 
-    <!-- Progress Modal -->
-    <div id="progressModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header text-center">
-                <h3>Streaming to WhatsApp...</h3>
-                <p>Please do not close this browser window while transmission is active.</p>
-            </div>
-            <div class="modal-body text-center">
-                <div class="progress-bar-container">
-                    <div id="progressBar" class="progress-bar"></div>
-                </div>
-                <h4 id="progressText" style="margin: 16px 0; font-size: 16px; font-weight: 700; color: var(--text-main);">0 / 0 processed</h4>
-                
-                <div class="progress-stats">
-                    <div class="stat-box success">
-                        <span class="stat-label">Successful</span>
-                        <span id="progressSuccess" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-box fail">
-                        <span class="stat-label">Failed</span>
-                        <span id="progressFail" class="stat-value">0</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    <!-- ================================================================
+         PREMIUM SENDING POPUP  (loading → success / error)
+         ================================================================ -->
+    <div id="sendingPopup" class="sp-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="spTitle">
 
-    <!-- Summary Modal -->
-    <div id="summaryModal" class="modal hidden">
-        <div class="modal-content modal-large">
-            <div class="modal-header">
-                <h3>Transmission Completed</h3>
-                <p>Overview of the message delivery results.</p>
-            </div>
-            <div class="modal-body">
-                <div class="progress-stats" style="margin-bottom: 24px;">
-                    <div class="stat-box">
-                        <span class="stat-label">Total Rows</span>
-                        <span id="summaryTotal" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-box success">
-                        <span class="stat-label">Successful</span>
-                        <span id="summarySuccess" class="stat-value">0</span>
-                    </div>
-                    <div class="stat-box fail">
-                        <span class="stat-label">Failed</span>
-                        <span id="summaryFail" class="stat-value">0</span>
-                    </div>
-                </div>
+        <!-- Confetti canvas covers entire backdrop -->
+        <canvas id="spConfettiCanvas" class="sp-confetti-canvas"></canvas>
 
-                <div id="failedRowsContainer" class="hidden">
-                    <h4 style="margin-bottom: 12px; color: var(--color-error); font-size: 15px;">Failed Deliveries</h4>
-                    <div class="table-container" style="max-height: 280px; overflow-y: auto;">
-                        <table class="preview-table">
-                            <thead>
-                                <tr>
-                                    <th>S.No</th>
-                                    <th>WhatsApp Number</th>
-                                    <th>Status</th>
-                                    <th>Error Details</th>
-                                </tr>
-                            </thead>
-                            <tbody id="failedRowsTbody">
-                            </tbody>
-                        </table>
+        <div class="sp-card">
+
+            <!-- LOADING PHASE -->
+            <div id="spLoading" class="sp-phase sp-phase-loading">
+                <div class="sp-gears">
+                    <div class="sp-gear sp-gear-cw">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                    </div>
+                    <div class="sp-gear-mesh-dot"></div>
+                    <div class="sp-gear sp-gear-ccw">
+                        <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
                     </div>
                 </div>
+                <h2 id="spTitle" class="sp-sending-label">SENDING...</h2>
+                <p id="spStatusMsg" class="sp-status-msg">Preparing secure message delivery</p>
+                <div class="sp-dots"><span></span><span></span><span></span></div>
             </div>
-            <div class="modal-footer">
-                <button id="doneBtn" class="btn btn-success" style="padding: 10px 24px;">Done</button>
+
+            <!-- SUCCESS PHASE -->
+            <div id="spSuccess" class="sp-phase sp-phase-success hidden">
+                <div class="sp-check-ring">
+                    <svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h2 class="sp-success-title">SUCCESS</h2>
+                <p class="sp-success-desc">Sent to individual societies via WhatsApp</p>
+                <button id="spDoneBtn" class="sp-done-btn">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                    DONE
+                </button>
             </div>
-        </div>
-    </div>
-    
+
+            <!-- ERROR PHASE -->
+            <div id="spError" class="sp-phase sp-phase-error hidden">
+                <div class="sp-error-ring">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="12"></line>
+                        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                    </svg>
+                </div>
+                <h2 class="sp-error-title">ERROR</h2>
+                <p id="spErrorMsg" class="sp-error-desc">Message delivery could not be completed.</p>
+                <button id="spCloseErrBtn" class="sp-close-err-btn">Close</button>
+            </div>
+
+        </div><!-- /.sp-card -->
+    </div><!-- /#sendingPopup -->
+
+
     <script src="js/config.js"></script>
     <script src="js/send.js"></script>
     <script src="js/navigation.js"></script>

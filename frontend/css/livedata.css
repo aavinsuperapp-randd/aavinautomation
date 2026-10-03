@@ -1,0 +1,695 @@
+/* ============================================
+   LIVE DATA PAGE STYLES
+   ============================================ */
+
+/* ---- Job List Section ---- */
+.ld-job-list-section {
+    animation: fadeInUp 0.4s ease;
+}
+
+.ld-section-title h2 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 16px;
+}
+
+.ld-job-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.ld-empty-state {
+    text-align: center;
+    padding: 64px 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 16px;
+}
+
+.ld-empty-state svg {
+    margin-bottom: 16px;
+}
+
+.ld-empty-state h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin-bottom: 8px;
+}
+
+.ld-empty-state p {
+    font-size: 13.5px;
+    color: var(--text-muted);
+    max-width: 340px;
+    margin: 0 auto;
+}
+
+/* Job Card in List */
+.ld-job-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.ld-job-card:hover {
+    border-color: var(--aavin-blue);
+    box-shadow: 0 2px 12px rgba(0, 105, 180, 0.08);
+    transform: translateY(-1px);
+}
+
+.ld-job-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ld-job-card-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.ld-job-card-meta {
+    font-size: 12.5px;
+    color: var(--text-muted);
+}
+
+.ld-job-card-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+.ld-job-card-status.status-completed {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.ld-job-card-status.status-processing,
+.ld-job-card-status.status-queued {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.ld-job-card-status.status-waiting {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.ld-job-card-status.status-failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.ld-job-card-status.status-cancelled {
+    background: rgba(107, 114, 128, 0.1);
+    color: #6b7280;
+}
+
+/* Pulsing dot for active statuses */
+.ld-pulse-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: ldPulse 1.5s ease-in-out infinite;
+}
+
+.ld-check-icon {
+    width: 14px;
+    height: 14px;
+}
+
+@keyframes ldPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+/* ---- Monitor Section ---- */
+.ld-monitor-section {
+    animation: fadeInUp 0.4s ease;
+}
+
+/* Job Header Card */
+.ld-job-header-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+.ld-job-info {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.ld-job-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.ld-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.4px;
+    text-transform: uppercase;
+}
+
+.ld-status-badge.s-processing {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.ld-status-badge.s-queued {
+    background: rgba(147, 51, 234, 0.1);
+    color: #7c3aed;
+}
+
+.ld-status-badge.s-waiting {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.ld-status-badge.s-completed {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.ld-status-badge.s-failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+/* ---- Batch Progress Card ---- */
+.ld-batch-progress-card {
+    padding: 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+.ld-batch-progress-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 20px;
+}
+
+.ld-batch-progress-header h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin: 0 0 4px 0;
+}
+
+.ld-batch-name {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text-main);
+    margin: 0;
+}
+
+.ld-batch-status-badge {
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.ld-batch-status-badge.bs-pending {
+    background: rgba(107, 114, 128, 0.08);
+    color: #6b7280;
+}
+
+.ld-batch-status-badge.bs-processing {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.ld-batch-status-badge.bs-waiting {
+    background: rgba(245, 158, 11, 0.1);
+    color: #d97706;
+}
+
+.ld-batch-status-badge.bs-completed {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.ld-batch-status-badge.bs-failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+/* Progress Bar */
+.ld-progress-bar-container {
+    width: 100%;
+    height: 10px;
+    background: var(--bg-page);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.ld-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--aavin-blue), var(--aavin-green));
+    border-radius: 10px;
+    transition: width 0.4s ease;
+    position: relative;
+    overflow: hidden;
+    min-width: 0%;
+}
+
+.ld-progress-bar-glow {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 40px;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4));
+    animation: progressGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes progressGlow {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 1; }
+}
+
+.ld-progress-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+}
+
+.ld-progress-info span:first-child {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.ld-progress-info span:last-child {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+}
+
+/* Countdown */
+.ld-countdown-section {
+    margin-top: 20px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    text-align: center;
+}
+
+.ld-countdown-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ld-countdown-timer {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--aavin-blue-dark);
+    letter-spacing: 2px;
+    animation: countdownPulse 1s ease-in-out infinite;
+}
+
+@keyframes countdownPulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+/* Completion Message */
+.ld-completion-msg {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(34, 197, 94, 0.08);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #16a34a;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* Failed Message */
+.ld-failed-msg {
+    margin-top: 20px;
+    padding: 16px;
+    background: rgba(239, 68, 68, 0.08);
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    color: #dc2626;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+}
+
+/* ---- Batch List Card ---- */
+.ld-batch-list-card {
+    padding: 20px 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+.ld-batch-list-card h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0 0 14px 0;
+}
+
+.ld-batch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.ld-batch-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: var(--bg-page);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.ld-batch-item.active {
+    background: rgba(59, 130, 246, 0.06);
+    border: 1px solid rgba(59, 130, 246, 0.15);
+}
+
+.ld-batch-item-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.ld-batch-item-number {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 13.5px;
+    font-weight: 700;
+    color: var(--text-main);
+    min-width: 60px;
+}
+
+.ld-batch-item-progress {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+}
+
+.ld-batch-item-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.4px;
+}
+
+.ld-batch-item-status.bis-completed {
+    color: #16a34a;
+}
+
+.ld-batch-item-status.bis-processing {
+    color: #2563eb;
+}
+
+.ld-batch-item-status.bis-waiting {
+    color: #d97706;
+}
+
+.ld-batch-item-status.bis-pending {
+    color: #9ca3af;
+}
+
+.ld-batch-item-status.bis-failed {
+    color: #dc2626;
+}
+
+/* ---- Data Table Card ---- */
+.ld-table-card {
+    padding: 20px 24px;
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    margin-bottom: 16px;
+}
+
+.ld-table-header {
+    margin-bottom: 14px;
+}
+
+.ld-table-header h3 {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main);
+    margin: 0;
+}
+
+/* Row Status Badges */
+.ld-row-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 12px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    white-space: nowrap;
+}
+
+.ld-row-status.rs-sent {
+    background: rgba(34, 197, 94, 0.1);
+    color: #16a34a;
+}
+
+.ld-row-status.rs-processing {
+    background: rgba(59, 130, 246, 0.1);
+    color: #2563eb;
+}
+
+.ld-row-status.rs-pending {
+    background: rgba(107, 114, 128, 0.06);
+    color: #9ca3af;
+}
+
+.ld-row-status.rs-failed {
+    background: rgba(239, 68, 68, 0.1);
+    color: #dc2626;
+}
+
+.ld-row-status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: currentColor;
+}
+
+/* Error tooltip */
+.ld-error-trigger {
+    cursor: pointer;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.ld-error-trigger:hover .ld-error-tooltip {
+    display: block;
+}
+
+.ld-error-tooltip {
+    display: none;
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    background: #1e293b;
+    color: #f1f5f9;
+    font-size: 12px;
+    font-weight: 500;
+    padding: 8px 12px;
+    border-radius: 8px;
+    white-space: nowrap;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    z-index: 100;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.2);
+    letter-spacing: 0;
+    text-transform: none;
+}
+
+.ld-error-tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    right: 12px;
+    border: 5px solid transparent;
+    border-top-color: #1e293b;
+}
+
+/* Image link truncation */
+.ld-link-cell {
+    max-width: 180px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.ld-link-cell a {
+    color: var(--aavin-blue);
+    text-decoration: none;
+    font-size: 12.5px;
+}
+
+.ld-link-cell a:hover {
+    text-decoration: underline;
+}
+
+/* Loading state */
+.ld-loading {
+    text-align: center;
+    padding: 48px 24px;
+    color: var(--text-muted);
+    font-size: 14px;
+}
+
+.ld-loading .ld-spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--border-color);
+    border-top-color: var(--aavin-blue);
+    border-radius: 50%;
+    animation: ldSpin 0.8s linear infinite;
+    margin-bottom: 12px;
+}
+
+@keyframes ldSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* ---- Animations ---- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(12px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 768px) {
+    .ld-job-header-card {
+        flex-direction: column;
+        gap: 14px;
+        align-items: flex-start;
+        padding: 16px 18px;
+    }
+
+    .ld-job-name {
+        font-size: 16px;
+    }
+
+    .ld-batch-progress-card {
+        padding: 18px;
+    }
+
+    .ld-batch-name {
+        font-size: 18px;
+    }
+
+    .ld-countdown-timer {
+        font-size: 28px;
+    }
+
+    .ld-batch-list-card {
+        padding: 16px 18px;
+    }
+
+    .ld-table-card {
+        padding: 16px 14px;
+    }
+
+    .ld-batch-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+        padding: 10px 14px;
+    }
+
+    .ld-job-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 14px 16px;
+    }
+}

@@ -1,11 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 const logger = require('./utils/logger');
 
 const authRoutes = require('./routes/auth');
 const automationsRoutes = require('./routes/automations');
 const sendRoutes = require('./routes/send');
+const liveDataRoutes = require('./routes/liveData');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -30,19 +32,10 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/automations', automationsRoutes);
 app.use('/api/send', sendRoutes);
+app.use('/api/live-data', liveDataRoutes);
 
-// Root endpoint
-app.get('/', (req, res) => {
-    res.send(`
-        <html>
-            <body style="font-family: sans-serif; padding: 2rem; text-align: center;">
-                <h2>WhatsApp Automation Backend</h2>
-                <p>The backend is running successfully!</p>
-                <p>To view the frontend, please visit the frontend server URL (e.g., <a href="http://localhost:8080">http://localhost:8080</a>).</p>
-            </body>
-        </html>
-    `);
-});
+// Serve frontend static files
+app.use(express.static(path.join(__dirname, '../frontend')));
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -58,10 +51,11 @@ app.use((err, req, res, next) => {
 app.listen(PORT, () => {
     console.log(`
 ========================================
- Backend Server Started
+ AAVIN Automation Server Started
 ========================================
  Environment: ${process.env.NODE_ENV || 'development'}
- Port: ${PORT}
+ API Port: ${PORT}
+ Frontend URL: http://localhost:${PORT}
  Supabase: ${process.env.SUPABASE_URL ? 'configured' : 'missing'}
  AskEVA Token: ${process.env.ASKEVA_TOKEN ? 'configured' : 'missing'}
 ========================================

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Data - AAVIN WhatsApp Automation</title>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/dashboard.css">
+    <link rel="stylesheet" href="css/livedata.css">
+</head>
+<body>
+    <!-- Mobile Header (Visible on screens <= 768px) -->
+    <header class="mobile-header">
+        <a href="dashboard.html" class="mobile-brand">
+            <img src="aavin-logo.png" alt="AAVIN" class="mobile-logo">
+            <div class="mobile-brand-text">
+                <span class="brand-title">AAVIN</span>
+                <span class="brand-sub">AUTOMATION</span>
+            </div>
+        </a>
+        <button id="mobileMenuBtn" class="mobile-menu-btn" aria-label="Open Navigation Menu">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="3" y1="6" x2="21" y2="6"></line>
+                <line x1="3" y1="12" x2="21" y2="12"></line>
+                <line x1="3" y1="18" x2="21" y2="18"></line>
+            </svg>
+        </button>
+    </header>
+
+    <!-- Translucent Overlay for Mobile Sidebar Drawer -->
+    <div id="mobileOverlay" class="mobile-overlay"></div>
+
+    <div class="dashboard-layout">
+        <!-- Fixed Desktop Sidebar / Mobile Off-canvas Drawer -->
+        <aside class="sidebar">
+            <div class="brand-header-sidebar">
+                <a href="dashboard.html" class="brand-logo-wrap">
+                    <img src="aavin-logo.png" alt="AAVIN" class="brand-logo-img">
+                    <div class="brand-title-group">
+                        <span class="brand-main-title">AAVIN</span>
+                        <span class="brand-sub-title">AUTOMATION</span>
+                    </div>
+                </a>
+                <button id="closeSidebarBtn" class="close-sidebar-btn" aria-label="Close Navigation">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <nav class="nav-menu">
+                <a href="dashboard.html" class="nav-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                    </svg>
+                    Dashboard
+                </a>
+                <a href="create.html" class="nav-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <line x1="12" y1="8" x2="12" y2="16"></line>
+                        <line x1="8" y1="12" x2="16" y2="12"></line>
+                    </svg>
+                    Create
+                </a>
+                <a href="send.html" class="nav-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="22" y1="2" x2="11" y2="13"></line>
+                        <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                    </svg>
+                    Send
+                </a>
+                <a href="livedata.html" class="nav-item active">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Live Data
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <span class="status-indicator"></span>
+                    <div class="status-details">
+                        <span class="status-text">System Ready</span>
+                    </div>
+                </div>
+                <button id="logoutBtn" class="btn btn-outline">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                    </svg>
+                    Logout
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <header class="topbar">
+                <div class="topbar-header-info">
+                    <h1>Live Data</h1>
+                    <p>Real-time automation activity monitoring</p>
+                </div>
+                <div class="topbar-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" style="color: var(--aavin-green);">
+                        <circle cx="12" cy="12" r="10"></circle>
+                    </svg>
+                    Live Monitor
+                </div>
+            </header>
+
+            <div class="content-area">
+                
+                <!-- Job Selector / History -->
+                <div id="jobListSection" class="ld-job-list-section">
+                    <div class="ld-section-title">
+                        <h2>Recent Automations</h2>
+                    </div>
+                    <div id="jobListContainer" class="ld-job-list">
+                        <div class="ld-empty-state">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="color: var(--text-muted); opacity: 0.5;">
+                                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                            </svg>
+                            <h3>No automation activity yet</h3>
+                            <p>Start a send operation from the Send page to see live data here.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Active Job Monitor -->
+                <div id="jobMonitorSection" class="ld-monitor-section hidden">
+                    
+                    <!-- Job Header Card -->
+                    <div class="ld-job-header-card">
+                        <div class="ld-job-info">
+                            <h2 id="ldJobName" class="ld-job-name">—</h2>
+                            <span id="ldJobStatus" class="ld-status-badge">—</span>
+                        </div>
+                        <button id="ldBackBtn" class="btn btn-outline btn-sm">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <line x1="19" y1="12" x2="5" y2="12"></line>
+                                <polyline points="12 19 5 12 12 5"></polyline>
+                            </svg>
+                            All Jobs
+                        </button>
+                    </div>
+
+                    <!-- Current Batch Progress -->
+                    <div class="ld-batch-progress-card">
+                        <div class="ld-batch-progress-header">
+                            <div>
+                                <h3 id="ldCurrentBatchLabel">Current Batch</h3>
+                                <p id="ldCurrentBatchName" class="ld-batch-name">Batch 1</p>
+                            </div>
+                            <div id="ldBatchStatusBadge" class="ld-batch-status-badge">PENDING</div>
+                        </div>
+                        <div class="ld-progress-bar-container">
+                            <div id="ldProgressBar" class="ld-progress-bar" style="width: 0%;">
+                                <div class="ld-progress-bar-glow"></div>
+                            </div>
+                        </div>
+                        <div class="ld-progress-info">
+                            <span id="ldProgressText">0 / 0</span>
+                            <span id="ldProgressPercent">0%</span>
+                        </div>
+                        <!-- Countdown -->
+                        <div id="ldCountdownSection" class="ld-countdown-section hidden">
+                            <div class="ld-countdown-label">Next batch starts in</div>
+                            <div id="ldCountdownTimer" class="ld-countdown-timer">00:00</div>
+                        </div>
+                        <!-- Completion message -->
+                        <div id="ldCompletionMsg" class="ld-completion-msg hidden">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                            <span>Automation Completed</span>
+                        </div>
+                        <!-- Failed message -->
+                        <div id="ldFailedMsg" class="ld-failed-msg hidden">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                            <span>Automation Failed</span>
+                        </div>
+                    </div>
+
+                    <!-- Batch List -->
+                    <div class="ld-batch-list-card">
+                        <h3>Batch Overview</h3>
+                        <div id="ldBatchList" class="ld-batch-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Detailed Data Table -->
+                    <div class="ld-table-card">
+                        <div class="ld-table-header">
+                            <h3>Detailed Data</h3>
+                        </div>
+                        <div class="table-container">
+                            <table class="preview-table ld-data-table">
+                                <thead id="ldTableHead">
+                                </thead>
+                                <tbody id="ldTableBody">
+                                </tbody>
+                            </table>
+                        </div>
+                        <div class="pagination" id="ldPaginationControls">
+                            <button id="ldPrevPage" class="btn btn-outline btn-sm" disabled>Previous</button>
+                            <span id="ldPageIndicator" class="page-indicator">Page 1 of 1</span>
+                            <button id="ldNextPage" class="btn btn-outline btn-sm" disabled>Next</button>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script src="js/config.js"></script>
+    <script src="js/livedata.js"></script>
+    <script src="js/navigation.js"></script>
+</body>
+</html>

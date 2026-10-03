@@ -74,6 +74,12 @@
                     </svg>
                     Send
                 </a>
+                <a href="livedata.html" class="nav-item">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                    </svg>
+                    Live Data
+                </a>
             </nav>
 
             <div class="sidebar-footer">
@@ -364,6 +370,14 @@
 
             <!-- LOADING PHASE -->
             <div id="spLoading" class="sp-phase sp-phase-loading">
+                <div class="sp-loading-header">
+                    <span class="sp-loading-brand">AAVIN AUTOMATION</span>
+                    <button id="spMinimizeBtn" class="sp-minimize-btn" aria-label="Minimize popup">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                        </svg>
+                    </button>
+                </div>
                 <div class="sp-gears">
                     <div class="sp-gear sp-gear-cw">
                         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
@@ -418,6 +432,16 @@
         </div><!-- /.sp-card -->
     </div><!-- /#sendingPopup -->
 
+    <!-- Minimized Sending Indicator -->
+    <div id="minimizedIndicator" class="minimized-indicator hidden">
+        <span class="min-pulse-dot"></span>
+        <span class="min-text">SENDING...</span>
+        <button class="min-restore-btn" aria-label="Restore">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="18 15 12 9 6 15"></polyline>
+            </svg>
+        </button>
+    </div>
 
     <script src="js/config.js"></script>
     <script src="js/send.js"></script>

@@ -1136,3 +1136,98 @@
     opacity: 0.6;
     cursor: not-allowed;
 }
+
+/* ── Minimize Header & Indicator ──────────────────────────────────────── */
+
+.sp-loading-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    margin-bottom: 24px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.sp-loading-brand {
+    font-size: 13px;
+    font-weight: 800;
+    color: var(--aavin-blue-dark);
+    letter-spacing: 0.05em;
+}
+
+.sp-minimize-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--text-muted);
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.sp-minimize-btn:hover {
+    background: var(--color-neutral-100);
+    color: var(--text-main);
+}
+
+.minimized-indicator {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 1000;
+    background: #ffffff;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    border-radius: 30px;
+    padding: 8px 16px 8px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-left: 3px solid var(--aavin-green);
+    animation: minFadeIn 0.3s ease-out;
+}
+
+.minimized-indicator:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.minimized-indicator.hidden {
+    display: none !important;
+}
+
+.min-pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--aavin-green);
+    animation: center-pulse 1.5s infinite;
+}
+
+.min-text {
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--text-main);
+    letter-spacing: 0.05em;
+}
+
+.min-restore-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+@keyframes minFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

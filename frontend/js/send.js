@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let detectedVariables = [], processedData = [], currentPage = 1;
     const ROWS_PER_PAGE = 20;
     let isSending = false;
+    let isMinimized = false;
 
     const uploadArea              = document.getElementById('uploadArea');
     const fileInput               = document.getElementById('fileInput');
@@ -46,6 +47,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const spDoneBtn               = document.getElementById('spDoneBtn');
     const spCloseErrBtn           = document.getElementById('spCloseErrBtn');
     const spConfettiCanvas        = document.getElementById('spConfettiCanvas');
+    const spMinimizeBtn           = document.getElementById('spMinimizeBtn');
+    const minimizedIndicator      = document.getElementById('minimizedIndicator');
 
     // File Upload
     uploadArea.addEventListener('click', () => fileInput.click());
@@ -238,6 +241,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function openPopup()  { sendingPopup.classList.remove('hidden'); }
     function closePopup() {
         sendingPopup.classList.add('hidden');
+        if (minimizedIndicator) minimizedIndicator.classList.add('hidden');
+        isMinimized = false;
         stopConfetti();
     }
 
@@ -250,6 +255,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function resetBtn() {
         isSending = false;
+        isMinimized = false;
         if (finalSendBtn) {
             finalSendBtn.disabled = false;
             finalSendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> START SENDING';
@@ -276,10 +282,61 @@ document.addEventListener('DOMContentLoaded', () => {
     if (spDoneBtn) spDoneBtn.addEventListener('click', () => { closePopup(); stopConfetti(); resetBtn(); });
     if (spCloseErrBtn) spCloseErrBtn.addEventListener('click', () => { closePopup(); resetBtn(); });
 
+    function minimizePopup() {
+        if (!isSending) return;
+        const spCard = sendingPopup.querySelector('.sp-card');
+        if (spCard) {
+            spCard.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+            spCard.style.transform = 'scale(0.96)';
+            spCard.style.opacity = '0';
+        }
+        setTimeout(() => {
+            sendingPopup.classList.add('hidden');
+            if (spCard) {
+                spCard.style.transform = '';
+                spCard.style.opacity = '';
+            }
+            if (minimizedIndicator) minimizedIndicator.classList.remove('hidden');
+            isMinimized = true;
+        }, 200);
+    }
+
+    function restorePopup() {
+        if (minimizedIndicator) minimizedIndicator.classList.add('hidden');
+        sendingPopup.classList.remove('hidden');
+        isMinimized = false;
+        const spCard = sendingPopup.querySelector('.sp-card');
+        if (spCard) {
+            spCard.style.transition = 'none';
+            spCard.style.transform = 'scale(0.96)';
+            spCard.style.opacity = '0';
+            void spCard.offsetWidth; // force reflow
+            spCard.style.transition = 'transform 0.2s ease, opacity 0.2s ease';
+            spCard.style.transform = 'scale(1)';
+            spCard.style.opacity = '1';
+            setTimeout(() => {
+                spCard.style.transition = '';
+                spCard.style.transform = '';
+                spCard.style.opacity = '';
+            }, 200);
+        }
+    }
+
+    if (spMinimizeBtn) spMinimizeBtn.addEventListener('click', minimizePopup);
+    if (minimizedIndicator) minimizedIndicator.addEventListener('click', restorePopup);
+
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && isSending) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    }, true);
+
     // Main popup-orchestrated send
     async function startSendingWithPopup() {
         if (isSending) return;
         isSending = true;
+        isMinimized = false;
         if (finalSendBtn) finalSendBtn.disabled = true;
         if (launchGetStartedBtn) {
             launchGetStartedBtn.style.pointerEvents = 'none';
@@ -300,16 +357,26 @@ document.addEventListener('DOMContentLoaded', () => {
         stopStatusRotation();
 
         if (apiResult && apiResult.success) {
+            if (isMinimized) restorePopup();
             showPhase('success');
             startContinuousConfetti();
+
+            // After 3 seconds, redirect to Live Data
+            setTimeout(() => {
+                closePopup();
+                stopConfetti();
+                resetBtn();
+                window.location.href = 'livedata.html?jobId=' + apiResult.jobId;
+            }, 3000);
         } else {
+            if (isMinimized) restorePopup();
             const msg = (apiResult && apiResult.message) ? apiResult.message : 'Message delivery could not be completed.';
             if (spErrorMsg) spErrorMsg.textContent = msg;
             showPhase('error');
         }
     }
 
-    // Existing backend call — unchanged logic, same endpoint, same payload
+    // Backend call — creates a persistent job and returns immediately
     async function runBackendCall() {
         const response = await fetch(CONFIG.API_BASE_URL + '/api/send/execute', {
             method : 'POST',
@@ -317,35 +384,13 @@ document.addEventListener('DOMContentLoaded', () => {
             body   : JSON.stringify({ automationId: selectedAutomation.id, rows: validRows })
         });
 
-        if (!response.ok) {
-            let msg = 'Failed to start sending.';
-            try { const e = await response.json(); msg = e.message || msg; } catch {}
-            return { success: false, message: msg };
+        const data = await response.json();
+
+        if (!response.ok || !data.success) {
+            return { success: false, message: data.message || 'Failed to start automation.' };
         }
 
-        const reader  = response.body.getReader();
-        const decoder = new TextDecoder();
-        let buffer    = '';
-        let lastData  = null;
-
-        while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop();
-            for (const line of lines) {
-                if (line.trim()) {
-                    try { lastData = JSON.parse(line); } catch {}
-                }
-            }
-        }
-        if (buffer.trim()) { try { lastData = JSON.parse(buffer); } catch {} }
-
-        if (!lastData) return { success: false, message: 'No response received from server.' };
-        if (lastData.type === 'error')    return { success: false, message: lastData.message };
-        if (lastData.type === 'complete') return { success: true, data: lastData };
-        return { success: false, message: 'Unexpected server response.' };
+        return { success: true, jobId: data.jobId, message: data.message };
     }
 
 

@@ -11,9 +11,32 @@ const activeJobs = new Map();
 /**
  * Create a new send job with batches and rows
  */
-async function createJob({ userId, automationId, automationName, rows, templateJson }) {
+async function createJob({ userId, automationId, automationName, rows, templateJson, imageUrls }) {
     const totalRows = rows.length;
     const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
+
+    // Clone templateJson and update image parameters with uploaded URLs
+    const finalTemplateJson = JSON.parse(JSON.stringify(templateJson));
+    finalTemplateJson._image_urls = imageUrls || {};
+    if (imageUrls && Object.keys(imageUrls).length > 0) {
+        let imgCount = 1;
+        if (finalTemplateJson.template && finalTemplateJson.template.components) {
+            finalTemplateJson.template.components.forEach(comp => {
+                if (comp.parameters) {
+                    comp.parameters.forEach(param => {
+                        if (param.type === 'image') {
+                            const newUrl = imageUrls[String(imgCount)];
+                            if (newUrl) {
+                                if (!param.image) param.image = {};
+                                param.image.link = newUrl;
+                            }
+                            imgCount++;
+                        }
+                    });
+                }
+            });
+        }
+    }
 
     // 1. Create the job
     const { data: job, error: jobError } = await supabase
@@ -26,7 +49,7 @@ async function createJob({ userId, automationId, automationName, rows, templateJ
             total_batches: totalBatches,
             current_batch: 1,
             status: 'QUEUED',
-            template_json: templateJson
+            template_json: finalTemplateJson
         })
         .select()
         .single();
@@ -176,7 +199,8 @@ async function processJob(jobId) {
             .eq('id', jobId);
 
         // Process this batch
-        await processBatch(batch, templateJson, ASKEVA_URL, jobId);
+        const imageUrls = (templateJson && templateJson._image_urls) || {};
+        await processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls);
 
         // If not the last batch, wait 60 seconds
         if (i < batches.length - 1) {
@@ -222,7 +246,7 @@ async function processJob(jobId) {
 /**
  * Process a single batch
  */
-async function processBatch(batch, templateJson, ASKEVA_URL, jobId) {
+async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = {}) {
     logger.info(`[BATCH] Processing batch ${batch.batch_number} (${batch.total_rows} rows)`);
 
     // Update batch status
@@ -270,11 +294,15 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId) {
             // Clone template
             const reqBody = JSON.parse(JSON.stringify(templateJson));
 
+            // Remove internal _image_urls property — must never be sent to AskEVA
+            delete reqBody._image_urls;
+
             // Replace "to"
             reqBody.to = row.whatsapp_number;
 
             // Replace parameters mapping
             if (reqBody.template && reqBody.template.components) {
+                // Replace text parameters in body component
                 const bodyComponent = reqBody.template.components.find(c => c.type === 'body');
                 if (bodyComponent && bodyComponent.parameters) {
                     let varCount = 1;
@@ -282,6 +310,26 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId) {
                         if (param.type === 'text') {
                             param.text = row.mapped_data[String(varCount)] || '';
                             varCount++;
+                        }
+                    });
+                }
+
+                // Replace image parameters across ALL components using imageUrls
+                if (imageUrls && Object.keys(imageUrls).length > 0) {
+                    let imgCount = 1;
+                    reqBody.template.components.forEach(comp => {
+                        if (comp.parameters) {
+                            comp.parameters.forEach(param => {
+                                if (param.type === 'image') {
+                                    const uploadedUrl = imageUrls[String(imgCount)];
+                                    if (uploadedUrl) {
+                                        if (!param.image) param.image = {};
+                                        param.image.link = uploadedUrl;
+                                        logger.info(`[ASK-EVA] Image ${imgCount} URL replaced: ${uploadedUrl.substring(0, 60)}...`);
+                                    }
+                                    imgCount++;
+                                }
+                            });
                         }
                     });
                 }

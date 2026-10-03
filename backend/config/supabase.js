@@ -8,6 +8,16 @@ if (!supabaseUrl || !supabaseKey) {
     console.warn('WARNING: Supabase URL and Key are not set in the environment variables.');
 }
 
-const supabase = createClient(supabaseUrl || 'https://placeholder.supabase.co', supabaseKey || 'placeholder-key');
+const supabase = createClient(
+    supabaseUrl || 'https://placeholder.supabase.co', 
+    supabaseKey || 'placeholder-key',
+    {
+        auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+        }
+    }
+);
 
 module.exports = supabase;

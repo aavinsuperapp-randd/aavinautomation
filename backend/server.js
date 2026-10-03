@@ -8,13 +8,14 @@ const authRoutes = require('./routes/auth');
 const automationsRoutes = require('./routes/automations');
 const sendRoutes = require('./routes/send');
 const liveDataRoutes = require('./routes/liveData');
+const uploadRoutes = require('./routes/upload');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
 // Request Logging Middleware
@@ -33,6 +34,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/automations', automationsRoutes);
 app.use('/api/send', sendRoutes);
 app.use('/api/live-data', liveDataRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Serve frontend static files
 app.use(express.static(path.join(__dirname, '../frontend')));

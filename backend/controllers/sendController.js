@@ -8,7 +8,7 @@ const { createJob, startJobProcessing } = require('../services/jobProcessor');
  * Returns immediately with the job ID.
  */
 exports.executeSend = async (req, res) => {
-    const { automationId, rows } = req.body;
+    const { automationId, rows, imageUrls } = req.body;
     const userId = req.user.id;
 
     logger.info(`========================================`);
@@ -16,6 +16,9 @@ exports.executeSend = async (req, res) => {
     logger.info(`========================================`);
     logger.info(`Automation ID: ${automationId}`);
     logger.info(`Total valid rows to process: ${rows ? rows.length : 0}`);
+    if (imageUrls && Object.keys(imageUrls).length > 0) {
+        logger.info(`Image URLs provided: ${Object.keys(imageUrls).length}`);
+    }
 
     if (!automationId || !rows || !Array.isArray(rows) || rows.length === 0) {
         logger.error(`[ERROR] Invalid request payload`);
@@ -61,13 +64,14 @@ exports.executeSend = async (req, res) => {
             return res.status(400).json({ success: false, message: 'Could not parse automation JSON' });
         }
 
-        // 3. Create the persistent job
+        // 3. Create the persistent job (pass imageUrls for runtime replacement)
         const job = await createJob({
             userId,
             automationId,
             automationName: automationData.automation_name,
             rows,
-            templateJson
+            templateJson,
+            imageUrls: imageUrls || {}
         });
 
         // 4. Start background processing (non-blocking)

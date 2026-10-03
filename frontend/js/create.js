@@ -56,21 +56,66 @@ document.addEventListener('DOMContentLoaded', () => {
         saveBtn.disabled = curlEditor.value.trim() === '';
     });
 
+    function openModal(modal) {
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modal) {
+        modal.classList.add('hidden');
+        const anyOpen = document.querySelectorAll('.modal:not(.hidden)').length > 0;
+        if (!anyOpen) {
+            document.body.style.overflow = '';
+        }
+    }
+
     // Open Modal
     saveBtn.addEventListener('click', () => {
         if (!curlEditor.value.trim()) return;
-        saveModal.classList.remove('hidden');
+        openModal(saveModal);
         automationNameInput.value = '';
         automationNameInput.focus();
         hideModalError();
     });
 
     // Close Modals
-    cancelSaveBtn.addEventListener('click', () => saveModal.classList.add('hidden'));
-    closeViewBtn.addEventListener('click', () => viewModal.classList.add('hidden'));
+    cancelSaveBtn.addEventListener('click', () => closeModal(saveModal));
+    closeViewBtn.addEventListener('click', () => closeModal(viewModal));
     cancelDeleteBtn.addEventListener('click', () => {
-        deleteModal.classList.add('hidden');
+        closeModal(deleteModal);
         currentDeleteId = null;
+    });
+
+    // Dismiss modal on backdrop click
+    [saveModal, viewModal, deleteModal].forEach(m => {
+        if (m) {
+            m.addEventListener('click', (e) => {
+                if (e.target === m) {
+                    closeModal(m);
+                    if (m === deleteModal) currentDeleteId = null;
+                }
+            });
+        }
+    });
+
+    // Dismiss modal on Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            [saveModal, viewModal, deleteModal].forEach(m => {
+                if (m && !m.classList.contains('hidden')) {
+                    closeModal(m);
+                    if (m === deleteModal) currentDeleteId = null;
+                }
+            });
+        }
+    });
+
+    // Press Enter to save inside automationName input
+    automationNameInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            confirmSaveBtn.click();
+        }
     });
 
     // Confirm Save
@@ -100,7 +145,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && data.success) {
                 // Success
-                saveModal.classList.add('hidden');
+                closeModal(saveModal);
                 curlEditor.value = ''; 
                 saveBtn.disabled = true;
                 showToast('✓ Automation saved successfully');
@@ -186,13 +231,13 @@ document.addEventListener('DOMContentLoaded', () => {
             card.querySelector('.view-btn').addEventListener('click', () => {
                 viewModalTitle.textContent = auto.automation_name;
                 viewCurlEditor.value = auto.curl_content;
-                viewModal.classList.remove('hidden');
+                openModal(viewModal);
             });
 
             // Delete Click
             card.querySelector('.delete-btn').addEventListener('click', () => {
                 currentDeleteId = auto.id;
-                deleteModal.classList.remove('hidden');
+                openModal(deleteModal);
             });
 
             automationsList.appendChild(card);
@@ -214,7 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (response.ok) {
-                deleteModal.classList.add('hidden');
+                closeModal(deleteModal);
                 currentDeleteId = null;
                 showToast('✓ Automation deleted successfully');
                 fetchAutomations(); // Refresh list

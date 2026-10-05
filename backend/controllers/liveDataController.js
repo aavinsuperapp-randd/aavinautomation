@@ -1,5 +1,6 @@
 const supabase = require('../config/supabase');
 const logger = require('../utils/logger');
+const { stopJob } = require('../services/jobProcessor');
 
 /**
  * GET /api/live-data/jobs
@@ -130,5 +131,28 @@ exports.getJobRows = async (req, res) => {
     } catch (err) {
         logger.error(`[LIVE-DATA] Server error: ${err.message}`);
         res.status(500).json({ success: false, message: 'Server error' });
+    }
+};
+
+/**
+ * POST /api/live-data/jobs/:jobId/stop
+ * Stop an active job safely and permanently
+ */
+exports.stopJob = async (req, res) => {
+    const { jobId } = req.params;
+    const userId = req.user.id;
+
+    logger.info(`[LIVE-DATA] Received request to stop job: ${jobId}`);
+
+    if (!jobId) {
+        return res.status(400).json({ success: false, message: 'Job ID is required' });
+    }
+
+    try {
+        const result = await stopJob(jobId, userId);
+        return res.status(result.status || 200).json(result);
+    } catch (err) {
+        logger.error(`[LIVE-DATA] Server error stopping job ${jobId}: ${err.message}`);
+        return res.status(500).json({ success: false, message: 'Server error stopping job' });
     }
 };

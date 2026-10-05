@@ -354,16 +354,35 @@
     <div id="confirmSendModal" class="modal hidden">
         <div class="modal-content">
             <div class="modal-header">
-                <h3>Confirm WhatsApp Distribution</h3>
+                <h3>Select Row Range & Confirm</h3>
             </div>
             <div class="modal-body">
-                <p>You are about to transmit messages to:</p>
-                <h4 id="confirmRowsCount" style="margin: 16px 0; font-size: 24px; color: var(--aavin-blue-dark); font-weight: 800;">0 recipients</h4>
+                <p>Total valid rows available:</p>
+                <h4 id="confirmRowsCount" style="margin: 10px 0 16px; font-size: 24px; color: var(--aavin-blue-dark); font-weight: 800;">0 rows</h4>
                 <p>Selected Automation: <strong id="confirmAutoName" style="color: var(--text-main);"></strong></p>
-                <p style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">This action will initiate message distribution. Are you sure you want to proceed?</p>
+
+                <div class="row-range-section" style="margin-top: 20px; padding: 16px; background: var(--color-neutral-50); border-radius: var(--radius-md); border: 1px solid var(--border-color);">
+                    <p style="font-size: 13px; font-weight: 600; color: var(--text-main); margin-bottom: 12px;">Choose which rows to send (based on preview table S.No):</p>
+                    <div style="display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 120px;">
+                            <label for="rangeStartRow" style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">Start Row</label>
+                            <input type="number" id="rangeStartRow" class="form-control" min="1" value="1" style="width: 100%;">
+                        </div>
+                        <div style="flex: 1; min-width: 120px;">
+                            <label for="rangeEndRow" style="font-size: 12px; font-weight: 600; color: var(--text-muted); display: block; margin-bottom: 4px;">End Row</label>
+                            <input type="number" id="rangeEndRow" class="form-control" min="1" value="1" style="width: 100%;">
+                        </div>
+                    </div>
+                    <div id="rangeSelectedInfo" style="margin-top: 10px; font-size: 13px; color: #16a34a; font-weight: 600;"></div>
+                    <div id="rangeDraftSavedMsg" style="margin-top: 8px; font-size: 12.5px; color: #0284c7; font-weight: 600; display: none;"></div>
+                    <div id="rangeError" style="margin-top: 8px; font-size: 12.5px; color: var(--color-error); font-weight: 600; display: none;"></div>
+                </div>
+
+                <p style="margin-top: 16px; font-size: 13px; color: var(--text-muted);">Only the rows in the selected range will be sent. This action will initiate message distribution.</p>
             </div>
             <div class="modal-footer">
                 <button id="cancelSendBtn" class="btn btn-outline">Cancel</button>
+                <button id="saveDraftRangeBtn" class="btn btn-primary">Save Draft</button>
                 <button id="executeSendBtn" class="btn btn-success">Confirm & Send</button>
             </div>
         </div>

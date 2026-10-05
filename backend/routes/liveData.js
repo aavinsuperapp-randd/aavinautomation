@@ -12,4 +12,7 @@ router.get('/jobs/:jobId', verifyToken, liveDataController.getJob);
 // GET /api/live-data/jobs/:jobId/rows - Get paginated rows
 router.get('/jobs/:jobId/rows', verifyToken, liveDataController.getJobRows);
 
+// POST /api/live-data/jobs/:jobId/stop - Stop an active job
+router.post('/jobs/:jobId/stop', verifyToken, liveDataController.stopJob);
+
 module.exports = router;

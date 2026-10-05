@@ -1,6 +1,6 @@
 const supabase = require('../config/supabase');
 const logger = require('../utils/logger');
-const { createJob, startJobProcessing } = require('../services/jobProcessor');
+const { createJob, startJobProcessing, stopJob } = require('../services/jobProcessor');
 
 /**
  * POST /api/send/execute
@@ -88,5 +88,28 @@ exports.executeSend = async (req, res) => {
     } catch (err) {
         logger.error(`[ERROR] Internal error: ${err.message}`);
         res.status(500).json({ success: false, message: 'Failed to start automation. Please try again.' });
+    }
+};
+
+/**
+ * POST /api/send/:jobId/stop
+ * Terminates an active send job safely and permanently.
+ */
+exports.stopSend = async (req, res) => {
+    const { jobId } = req.params;
+    const userId = req.user.id;
+
+    logger.info(`[SEND] Received request to stop job: ${jobId}`);
+
+    if (!jobId) {
+        return res.status(400).json({ success: false, message: 'Job ID is required' });
+    }
+
+    try {
+        const result = await stopJob(jobId, userId);
+        return res.status(result.status || 200).json(result);
+    } catch (err) {
+        logger.error(`[SEND] Error stopping job ${jobId}: ${err.message}`);
+        return res.status(500).json({ success: false, message: 'Failed to stop automation job' });
     }
 };

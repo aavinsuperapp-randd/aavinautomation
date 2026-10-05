@@ -35,6 +35,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const finalSendBtn            = document.getElementById('finalSendBtn');
     const confirmSendModal        = document.getElementById('confirmSendModal');
     const cancelSendBtn           = document.getElementById('cancelSendBtn');
+    const saveDraftRangeBtn       = document.getElementById('saveDraftRangeBtn');
     const executeSendBtn          = document.getElementById('executeSendBtn');
     const confirmRowsCount        = document.getElementById('confirmRowsCount');
     const confirmAutoName         = document.getElementById('confirmAutoName');
@@ -60,6 +61,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     changeFileBtn.addEventListener('click', () => {
         excelData = []; excelHeaders = []; fileInput.value = '';
+        savedDraftRange = null; selectedRows = null;
         uploadArea.classList.remove('hidden'); fileInfoCard.classList.add('hidden');
         workflowForm.classList.add('hidden'); previewSection.classList.add('hidden');
         automationSelect.value = '';
@@ -70,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!['.xlsx', '.xls'].includes(ext)) { alert('Invalid file format. Please upload .xlsx or .xls'); return; }
         const reader = new FileReader();
         reader.onload = (e) => {
+            savedDraftRange = null; selectedRows = null;
             const data = new Uint8Array(e.target.result);
             const wb   = XLSX.read(data, { type: 'array' });
             const ws   = wb.Sheets[wb.SheetNames[0]];
@@ -343,6 +346,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     previewBtn.addEventListener('click', () => {
+        savedDraftRange = null; selectedRows = null;
         validationMessage.classList.add('hidden');
         const waCol = whatsappColumnSelect.value;
         if (!waCol) { showValError('Please select a WhatsApp Number Column.'); return; }
@@ -418,6 +422,19 @@ document.addEventListener('DOMContentLoaded', () => {
     nextPageBtn.addEventListener('click', () => { const p = Math.ceil(processedData.length / ROWS_PER_PAGE); if (currentPage < p) { currentPage++; renderTablePage(); } });
 
     let validRows = [];
+    let selectedRows = null;
+    let savedDraftRange = null;
+
+    function getValidDraftRange() {
+        if (!savedDraftRange) return null;
+        const total = validRows.length;
+        const s = parseInt(savedDraftRange.startRow) || 0;
+        const e = parseInt(savedDraftRange.endRow) || 0;
+        if (s >= 1 && e <= total && s <= e) {
+            return { startRow: s, endRow: e };
+        }
+        return null;
+    }
 
     if (finalSendBtn) {
         finalSendBtn.addEventListener('click', () => {
@@ -431,39 +448,157 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Please upload Image ' + imgIdx + ' before starting the automation.'); return;
                 }
             }
-            confirmRowsCount.textContent = validRows.length + ' recipients';
+            confirmRowsCount.textContent = validRows.length + ' rows';
             confirmAutoName.textContent  = selectedAutomation.automation_name;
+            
+            const rangeStartInput = document.getElementById('rangeStartRow');
+            const rangeEndInput = document.getElementById('rangeEndRow');
+            const rangeSelectedInfo = document.getElementById('rangeSelectedInfo');
+            const rangeDraftSavedMsg = document.getElementById('rangeDraftSavedMsg');
+            const rangeError = document.getElementById('rangeError');
+            
+            if (rangeDraftSavedMsg) rangeDraftSavedMsg.style.display = 'none';
+
+            if (rangeStartInput && rangeEndInput) {
+                rangeStartInput.max = validRows.length;
+                rangeEndInput.max = validRows.length;
+
+                const draft = getValidDraftRange();
+                if (draft) {
+                    rangeStartInput.value = draft.startRow;
+                    rangeEndInput.value = draft.endRow;
+                } else {
+                    rangeStartInput.value = 1;
+                    rangeEndInput.value = validRows.length;
+                }
+                
+                function updateRangeUI() {
+                    const s = parseInt(rangeStartInput.value) || 0;
+                    const e = parseInt(rangeEndInput.value) || 0;
+                    if (s >= 1 && e <= validRows.length && s <= e) {
+                        const count = (e - s) + 1;
+                        rangeSelectedInfo.textContent = `${count} rows selected for sending.`;
+                        rangeError.style.display = 'none';
+                        if (executeSendBtn) executeSendBtn.disabled = false;
+                        if (saveDraftRangeBtn) saveDraftRangeBtn.disabled = false;
+                    } else {
+                        rangeSelectedInfo.textContent = '';
+                        rangeError.textContent = `Invalid range. Start Row must be >= 1, End Row <= ${validRows.length}, and Start <= End.`;
+                        rangeError.style.display = 'block';
+                        if (executeSendBtn) executeSendBtn.disabled = true;
+                        if (saveDraftRangeBtn) saveDraftRangeBtn.disabled = true;
+                    }
+                }
+                
+                rangeStartInput.oninput = () => {
+                    if (rangeDraftSavedMsg) rangeDraftSavedMsg.style.display = 'none';
+                    updateRangeUI();
+                };
+                rangeEndInput.oninput = () => {
+                    if (rangeDraftSavedMsg) rangeDraftSavedMsg.style.display = 'none';
+                    updateRangeUI();
+                };
+                updateRangeUI();
+            }
+            
             confirmSendModal.classList.remove('hidden');
         });
     }
     if (cancelSendBtn) cancelSendBtn.addEventListener('click', () => confirmSendModal.classList.add('hidden'));
-    if (executeSendBtn) executeSendBtn.addEventListener('click', () => { confirmSendModal.classList.add('hidden'); startSendingWithPopup(); });
 
-    // "Get Started" button works like send message once data is loaded, starting directly without asking permission again
+    if (saveDraftRangeBtn) {
+        saveDraftRangeBtn.addEventListener('click', () => {
+            const rangeStartInput = document.getElementById('rangeStartRow');
+            const rangeEndInput = document.getElementById('rangeEndRow');
+            const rangeError = document.getElementById('rangeError');
+            const rangeDraftSavedMsg = document.getElementById('rangeDraftSavedMsg');
+
+            if (!rangeStartInput || !rangeEndInput) return;
+            const s = parseInt(rangeStartInput.value) || 0;
+            const e = parseInt(rangeEndInput.value) || 0;
+
+            if (s >= 1 && e <= validRows.length && s <= e) {
+                savedDraftRange = { startRow: s, endRow: e };
+                if (rangeError) rangeError.style.display = 'none';
+                if (rangeDraftSavedMsg) {
+                    const count = (e - s) + 1;
+                    rangeDraftSavedMsg.textContent = `✓ Draft saved: Range ${s}–${e} (${count} rows) saved for this dataset.`;
+                    rangeDraftSavedMsg.style.display = 'block';
+                }
+            } else {
+                if (rangeError) {
+                    rangeError.textContent = `Cannot save draft. Start Row must be >= 1, End Row <= ${validRows.length}, and Start <= End.`;
+                    rangeError.style.display = 'block';
+                }
+            }
+        });
+    }
+    
+    if (executeSendBtn) {
+        executeSendBtn.addEventListener('click', () => { 
+            const rangeStartInput = document.getElementById('rangeStartRow');
+            const rangeEndInput = document.getElementById('rangeEndRow');
+            
+            validRows = processedData.filter(r => r.isValid);
+            let rowsToSend = validRows;
+            if (rangeStartInput && rangeEndInput) {
+                const s = parseInt(rangeStartInput.value) || 1;
+                const e = parseInt(rangeEndInput.value) || validRows.length;
+                if (s >= 1 && e <= validRows.length && s <= e) {
+                    rowsToSend = validRows.slice(s - 1, e);
+                } else {
+                    return; // Invalid, do nothing (button should be disabled anyway)
+                }
+            }
+            
+            selectedRows = rowsToSend;
+            confirmSendModal.classList.add('hidden'); 
+            startSendingWithPopup(rowsToSend); 
+        });
+    }
+
+    // "Get Started" button supports Mode 1 (no draft -> full dataset) and Mode 2 (saved draft range exists)
     if (launchGetStartedBtn) {
         launchGetStartedBtn.addEventListener('click', (e) => {
             e.preventDefault();
             if (isSending) return;
 
             // Check if user has uploaded data and preview is generated
-            validRows = processedData.filter(r => r.isValid);
-            if (processedData.length > 0 && validRows.length > 0) {
-                // Validate images before send
-                for (let i = 0; i < detectedImages.length; i++) {
-                    const imgIdx = detectedImages[i].index;
-                    if (!uploadedImages[imgIdx] || !uploadedImages[imgIdx].url) {
-                        alert('Please upload Image ' + imgIdx + ' before starting the automation.'); return;
-                    }
-                }
-                // Both buttons have sending functionality; Get Started starts directly without asking permission again
-                startSendingWithPopup();
-            } else if (processedData.length > 0 && validRows.length === 0) {
-                alert('There are no valid recipient rows to send. Please check your mapped data.');
-            } else {
+            if (!processedData || processedData.length === 0) {
                 // Data not loaded yet — scroll up to Step 1
                 const step1 = document.getElementById('step1');
                 if (step1) step1.scrollIntoView({ behavior: 'smooth' });
+                return;
             }
+
+            validRows = processedData.filter(r => r.isValid);
+            if (validRows.length === 0) {
+                alert('There are no valid recipient rows to send. Please check your mapped data.');
+                return;
+            }
+
+            // Validate images before send
+            for (let i = 0; i < detectedImages.length; i++) {
+                const imgIdx = detectedImages[i].index;
+                if (!uploadedImages[imgIdx] || !uploadedImages[imgIdx].url) {
+                    alert('Please upload Image ' + imgIdx + ' before starting the automation.');
+                    return;
+                }
+            }
+
+            // Check if a valid draft exists for current dataset
+            const draft = getValidDraftRange();
+            let rowsToSend;
+            if (draft) {
+                // MODE 2 — SAVED/DRAFT RANGE EXISTS: Send only saved rows
+                rowsToSend = validRows.slice(draft.startRow - 1, draft.endRow);
+            } else {
+                // MODE 1 — NO SAVED/DRAFT RANGE: Send full preview dataset
+                rowsToSend = validRows;
+            }
+
+            selectedRows = rowsToSend;
+            startSendingWithPopup(rowsToSend);
         });
     }
 
@@ -485,6 +620,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function resetBtn() {
         isSending = false;
         isMinimized = false;
+        selectedRows = null;
         if (finalSendBtn) {
             finalSendBtn.disabled = false;
             finalSendBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg> START SENDING';
@@ -562,7 +698,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }, true);
 
     // Main popup-orchestrated send
-    async function startSendingWithPopup() {
+    async function startSendingWithPopup(customRows) {
         if (isSending) return;
         isSending = true;
         isMinimized = false;
@@ -576,9 +712,10 @@ document.addEventListener('DOMContentLoaded', () => {
         showPhase('loading');
         startStatusRotation();
 
+        const rowsToSend = customRows || selectedRows || validRows;
         const minTimer   = new Promise(res => setTimeout(res, 8000));
         let apiResult    = null;
-        const apiPromise = runBackendCall()
+        const apiPromise = runBackendCall(rowsToSend)
             .then(r => { apiResult = r; })
             .catch(e => { apiResult = { success: false, message: e.message || 'Network error during sending.' }; });
 
@@ -606,7 +743,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // Backend call — creates a persistent job and returns immediately
-    async function runBackendCall() {
+    async function runBackendCall(customRows) {
         // Build imageUrls map: { "1": "https://...", "2": "https://..." }
         const imageUrlsMap = {};
         Object.keys(uploadedImages).forEach(k => {
@@ -615,12 +752,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        const rowsToSend = customRows || selectedRows || validRows;
+
         const response = await fetch(CONFIG.API_BASE_URL + '/api/send/execute', {
             method : 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body   : JSON.stringify({
                 automationId: selectedAutomation.id,
-                rows: validRows,
+                rows: rowsToSend,
                 imageUrls: Object.keys(imageUrlsMap).length > 0 ? imageUrlsMap : undefined
             })
         });

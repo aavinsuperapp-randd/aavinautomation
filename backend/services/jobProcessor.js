@@ -5,7 +5,7 @@ const BATCH_SIZE = 300;
 const SEND_INTERVAL_MS = 200; // 5 messages per second
 const BATCH_COOLDOWN_MS = 60000; // 60 seconds between batches
 
-// In-memory store of active jobs (jobId -> true)
+// In-memory store of active jobs (jobId -> { stopped, currentAbortController, wakeCooldown })
 const activeJobs = new Map();
 
 /**
@@ -122,10 +122,15 @@ function startJobProcessing(jobId) {
         return;
     }
 
-    activeJobs.set(jobId, true);
+    const jobControl = {
+        stopped: false,
+        currentAbortController: null,
+        wakeCooldown: null
+    };
+    activeJobs.set(jobId, jobControl);
 
     // Run async without awaiting - this is the background processor
-    processJob(jobId).catch(err => {
+    processJob(jobId, jobControl).catch(err => {
         logger.error(`[JOB] Unhandled error processing job ${jobId}: ${err.message}`);
         markJobFailed(jobId, err.message);
     }).finally(() => {
@@ -136,10 +141,26 @@ function startJobProcessing(jobId) {
 /**
  * Main job processing loop
  */
-async function processJob(jobId) {
+async function processJob(jobId, jobControl) {
     logger.info(`[JOB] ========================================`);
     logger.info(`[JOB] Starting job processing: ${jobId}`);
     logger.info(`[JOB] ========================================`);
+
+    // Check DB status before marking PROCESSING in case user already stopped it
+    const { data: checkJob, error: checkError } = await supabase
+        .from('send_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+
+    if (checkError || !checkJob) {
+        throw new Error('Job not found');
+    }
+
+    if (checkJob.status === 'STOPPED') {
+        logger.info(`[JOB] Job ${jobId} was already marked STOPPED. Aborting start.`);
+        return;
+    }
 
     // Update job status
     await supabase
@@ -148,15 +169,7 @@ async function processJob(jobId) {
         .eq('id', jobId);
 
     // Get the job
-    const { data: job, error: jobError } = await supabase
-        .from('send_jobs')
-        .select('*')
-        .eq('id', jobId)
-        .single();
-
-    if (jobError || !job) {
-        throw new Error('Job not found');
-    }
+    const job = checkJob;
 
     // Get ASKEVA token
     const ASKEVA_TOKEN = process.env.ASKEVA_TOKEN;
@@ -186,9 +199,27 @@ async function processJob(jobId) {
     for (let i = 0; i < batches.length; i++) {
         const batch = batches[i];
 
-        // Skip completed batches (for restart resilience)
-        if (batch.status === 'COMPLETED') {
-            logger.info(`[JOB] Batch ${batch.batch_number} already completed, skipping`);
+        // Check if job was stopped in memory or in database
+        if (jobControl.stopped) {
+            logger.info(`[JOB] Job ${jobId} stopped. Halting before batch ${batch.batch_number}`);
+            return;
+        }
+
+        const { data: dbStatusCheck } = await supabase
+            .from('send_jobs')
+            .select('status')
+            .eq('id', jobId)
+            .single();
+
+        if (dbStatusCheck && dbStatusCheck.status === 'STOPPED') {
+            jobControl.stopped = true;
+            logger.info(`[JOB] Job ${jobId} detected as STOPPED in DB. Halting before batch ${batch.batch_number}`);
+            return;
+        }
+
+        // Skip completed or stopped batches (for restart resilience)
+        if (batch.status === 'COMPLETED' || batch.status === 'STOPPED') {
+            logger.info(`[JOB] Batch ${batch.batch_number} already ${batch.status}, skipping`);
             continue;
         }
 
@@ -200,9 +231,15 @@ async function processJob(jobId) {
 
         // Process this batch
         const imageUrls = (templateJson && templateJson._image_urls) || {};
-        await processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls);
+        await processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls, jobControl);
 
-        // If not the last batch, wait 60 seconds
+        // If stopped during batch processing, exit loop immediately
+        if (jobControl.stopped) {
+            logger.info(`[JOB] Job ${jobId} stopped during batch ${batch.batch_number}. Exiting processing.`);
+            return;
+        }
+
+        // If not the last batch, wait 60 seconds (interruptible)
         if (i < batches.length - 1) {
             const nextBatchAt = new Date(Date.now() + BATCH_COOLDOWN_MS).toISOString();
 
@@ -219,7 +256,26 @@ async function processJob(jobId) {
                 .eq('id', jobId);
 
             logger.info(`[JOB] Waiting ${BATCH_COOLDOWN_MS / 1000}s before next batch...`);
-            await sleep(BATCH_COOLDOWN_MS);
+            const wokeEarly = await interruptibleSleep(BATCH_COOLDOWN_MS, jobControl);
+
+            // If stopped during wait, exit immediately
+            if (wokeEarly || jobControl.stopped) {
+                logger.info(`[JOB] Job ${jobId} was stopped during cooldown. Exiting.`);
+                return;
+            }
+
+            // Check DB status again after cooldown
+            const { data: postWaitCheck } = await supabase
+                .from('send_jobs')
+                .select('status')
+                .eq('id', jobId)
+                .single();
+
+            if (postWaitCheck && postWaitCheck.status === 'STOPPED') {
+                jobControl.stopped = true;
+                logger.info(`[JOB] Job ${jobId} detected as STOPPED after cooldown. Exiting.`);
+                return;
+            }
 
             // Resume processing status
             await supabase
@@ -229,25 +285,40 @@ async function processJob(jobId) {
         }
     }
 
-    // Mark job as completed
-    await supabase
-        .from('send_jobs')
-        .update({
-            status: 'COMPLETED',
-            completed_at: new Date().toISOString()
-        })
-        .eq('id', jobId);
+    // Mark job as completed ONLY if not stopped or failed
+    if (!jobControl.stopped) {
+        const { data: finalCheck } = await supabase
+            .from('send_jobs')
+            .select('status')
+            .eq('id', jobId)
+            .single();
 
-    logger.info(`[JOB] ========================================`);
-    logger.info(`[JOB] Job ${jobId} COMPLETED`);
-    logger.info(`[JOB] ========================================`);
+        if (finalCheck && finalCheck.status !== 'STOPPED' && finalCheck.status !== 'FAILED') {
+            await supabase
+                .from('send_jobs')
+                .update({
+                    status: 'COMPLETED',
+                    completed_at: new Date().toISOString()
+                })
+                .eq('id', jobId);
+
+            logger.info(`[JOB] ========================================`);
+            logger.info(`[JOB] Job ${jobId} COMPLETED`);
+            logger.info(`[JOB] ========================================`);
+        }
+    }
 }
 
 /**
  * Process a single batch
  */
-async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = {}) {
+async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = {}, jobControl = { stopped: false }) {
     logger.info(`[BATCH] Processing batch ${batch.batch_number} (${batch.total_rows} rows)`);
+
+    if (jobControl.stopped) {
+        logger.info(`[BATCH] Batch ${batch.batch_number} halted before start: job is stopped`);
+        return;
+    }
 
     // Update batch status
     await supabase
@@ -275,6 +346,12 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
     let failedCount = 0;
 
     for (let i = 0; i < rows.length; i++) {
+        // Stop check before each row
+        if (jobControl.stopped) {
+            logger.info(`[BATCH] Stopping row loop in batch ${batch.batch_number} at row ${i + 1}/${rows.length}`);
+            break;
+        }
+
         const row = rows[i];
 
         // Skip already processed rows (for restart resilience)
@@ -291,6 +368,15 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
             .eq('id', row.id);
 
         try {
+            // Stop check right before issuing HTTP request
+            if (jobControl.stopped) {
+                await supabase
+                    .from('send_rows')
+                    .update({ status: 'PENDING' })
+                    .eq('id', row.id);
+                break;
+            }
+
             // Clone template
             const reqBody = JSON.parse(JSON.stringify(templateJson));
 
@@ -337,8 +423,9 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
 
             logger.info(`[ASK-EVA] Batch ${batch.batch_number} | Row ${i + 1}/${rows.length} | To: ${row.whatsapp_number}`);
 
-            // Send with timeout
+            // Send with timeout and cancellation support
             const controller = new AbortController();
+            jobControl.currentAbortController = controller;
             const timeoutId = setTimeout(() => controller.abort(), 15000);
 
             let apiRes;
@@ -350,12 +437,30 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
                     signal: controller.signal
                 });
             } catch (fetchErr) {
+                if (jobControl.stopped) {
+                    logger.info(`[ASK-EVA] Row ${row.row_number} aborted because job was STOPPED`);
+                    await supabase
+                        .from('send_rows')
+                        .update({ status: 'PENDING' })
+                        .eq('id', row.id);
+                    break;
+                }
                 if (fetchErr.name === 'AbortError') {
                     throw new Error('Network timeout');
                 }
                 throw fetchErr;
             } finally {
                 clearTimeout(timeoutId);
+                jobControl.currentAbortController = null;
+            }
+
+            // If job was stopped while fetch was finishing, revert row to PENDING unless confirmed ok
+            if (jobControl.stopped && !apiRes.ok) {
+                await supabase
+                    .from('send_rows')
+                    .update({ status: 'PENDING' })
+                    .eq('id', row.id);
+                break;
             }
 
             const responseText = await apiRes.text();
@@ -397,6 +502,13 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
                 }
             }
         } catch (err) {
+            if (jobControl.stopped) {
+                await supabase
+                    .from('send_rows')
+                    .update({ status: 'PENDING' })
+                    .eq('id', row.id);
+                break;
+            }
             failedCount++;
             await supabase
                 .from('send_rows')
@@ -419,17 +531,25 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
             })
             .eq('id', batch.id);
 
-        // Rate limiting: wait 200ms between messages (5 msg/sec)
+        if (jobControl.stopped) {
+            break;
+        }
+
+        // Rate limiting: wait 200ms between messages (5 msg/sec) - interruptible
         if (i < rows.length - 1) {
-            await sleep(SEND_INTERVAL_MS);
+            const interrupted = await interruptibleSleep(SEND_INTERVAL_MS, jobControl);
+            if (interrupted || jobControl.stopped) {
+                break;
+            }
         }
     }
 
-    // Mark batch as completed
+    // Determine final batch status: if job was stopped mid-way, mark batch STOPPED
+    const finalBatchStatus = jobControl.stopped ? 'STOPPED' : 'COMPLETED';
     await supabase
         .from('send_batches')
         .update({
-            status: 'COMPLETED',
+            status: finalBatchStatus,
             processed_rows: sentCount + failedCount,
             sent_rows: sentCount,
             failed_rows: failedCount,
@@ -437,7 +557,86 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
         })
         .eq('id', batch.id);
 
-    logger.info(`[BATCH] Batch ${batch.batch_number} COMPLETED (sent: ${sentCount}, failed: ${failedCount})`);
+    logger.info(`[BATCH] Batch ${batch.batch_number} finished as ${finalBatchStatus} (sent: ${sentCount}, failed: ${failedCount})`);
+}
+
+/**
+ * Stop an active job immediately and permanently
+ */
+async function stopJob(jobId, userId) {
+    logger.info(`[JOB] Stop requested for job ${jobId} by user ${userId}`);
+
+    // 1. Verify job exists and belongs to user
+    const { data: job, error: jobError } = await supabase
+        .from('send_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .eq('user_id', userId)
+        .single();
+
+    if (jobError || !job) {
+        logger.error(`[JOB] Job ${jobId} not found or unauthorized for stop`);
+        return { success: false, status: 404, message: 'Job not found' };
+    }
+
+    // If job is already in terminal state
+    if (['COMPLETED', 'FAILED', 'STOPPED'].includes(job.status)) {
+        logger.info(`[JOB] Job ${jobId} is already in terminal state: ${job.status}`);
+        return { success: true, message: `Job is already ${job.status.toLowerCase()}`, job };
+    }
+
+    // 2. Mark in-memory active job as stopped immediately (stops row sending & aborts wait/in-flight)
+    const jobControl = activeJobs.get(jobId);
+    if (jobControl) {
+        jobControl.stopped = true;
+
+        // Abort current in-flight fetch if present
+        if (jobControl.currentAbortController) {
+            try {
+                jobControl.currentAbortController.abort();
+                logger.info(`[JOB] Aborted in-flight AskEVA request for job ${jobId}`);
+            } catch (e) {
+                logger.warn(`[JOB] Error aborting fetch: ${e.message}`);
+            }
+        }
+
+        // Interrupt 60-second cooldown wait immediately
+        if (jobControl.wakeCooldown) {
+            jobControl.wakeCooldown();
+            logger.info(`[JOB] Interrupted batch cooldown timer for job ${jobId}`);
+        }
+    }
+
+    // 3. Atomically update job status to STOPPED in the database
+    const nowIso = new Date().toISOString();
+    const { data: updatedJob, error: updateError } = await supabase
+        .from('send_jobs')
+        .update({
+            status: 'STOPPED',
+            completed_at: nowIso
+        })
+        .eq('id', jobId)
+        .select()
+        .single();
+
+    if (updateError) {
+        logger.error(`[JOB] Failed to update job status to STOPPED: ${updateError.message}`);
+        return { success: false, status: 500, message: 'Failed to update job status' };
+    }
+
+    // 4. Update any active or waiting batches to STOPPED and clear next_batch_at countdown
+    await supabase
+        .from('send_batches')
+        .update({
+            status: 'STOPPED',
+            completed_at: nowIso,
+            next_batch_at: null
+        })
+        .eq('job_id', jobId)
+        .in('status', ['PROCESSING', 'PENDING', 'WAITING']);
+
+    logger.info(`[JOB] Job ${jobId} successfully marked as STOPPED`);
+    return { success: true, message: 'Automation stopped successfully', job: updatedJob };
 }
 
 /**
@@ -459,6 +658,28 @@ function sleep(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
+function interruptibleSleep(ms, jobControl) {
+    return new Promise(resolve => {
+        if (jobControl && jobControl.stopped) return resolve(true);
+
+        let timer = null;
+        const wake = () => {
+            if (timer) clearTimeout(timer);
+            if (jobControl) jobControl.wakeCooldown = null;
+            resolve(true); // woke early due to stop
+        };
+
+        if (jobControl) {
+            jobControl.wakeCooldown = wake;
+        }
+
+        timer = setTimeout(() => {
+            if (jobControl) jobControl.wakeCooldown = null;
+            resolve(false); // full timer elapsed
+        }, ms);
+    });
+}
+
 /**
  * Check if a job is currently active in this process
  */
@@ -469,5 +690,6 @@ function isJobActive(jobId) {
 module.exports = {
     createJob,
     startJobProcessing,
-    isJobActive
+    isJobActive,
+    stopJob
 };

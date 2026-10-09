@@ -6,11 +6,12 @@ document.addEventListener('DOMContentLoaded', () => {
     if (logoutBtn) logoutBtn.addEventListener('click', () => { localStorage.removeItem('wa_auth_token'); window.location.href = 'index.html'; });
 
     let excelData = [], excelHeaders = [], automations = [], selectedAutomation = null;
-    let detectedVariables = [], detectedImages = [], processedData = [], currentPage = 1;
+    let detectedVariables = [], detectedImages = [], detectedDocuments = [], processedData = [], currentPage = 1;
     const ROWS_PER_PAGE = 20;
     let isSending = false;
     let isMinimized = false;
     let uploadedImages = {}; // { "1": { fileName, url, size }, "2": ... }
+    let uploadedDocuments = {}; // { "1": { fileName, url, size }, "2": ... }
 
     const uploadArea              = document.getElementById('uploadArea');
     const fileInput               = document.getElementById('fileInput');
@@ -90,6 +91,12 @@ document.addEventListener('DOMContentLoaded', () => {
         automationSelect.innerHTML = '<option value="">Loading automations...</option>';
         try {
             const res  = await fetch(CONFIG.API_BASE_URL + '/api/automations', { headers: { 'Authorization': 'Bearer ' + token } });
+            if (res.status === 401) {
+                // Token expired or invalid — clear and redirect to login
+                localStorage.removeItem('wa_auth_token');
+                window.location.href = 'index.html';
+                return;
+            }
             const data = await res.json();
             if (res.ok && data.success) { automations = data.automations; populateAutomationDropdown(); }
             else automationSelect.innerHTML = '<option value="">Failed to load automations</option>';
@@ -107,6 +114,7 @@ document.addEventListener('DOMContentLoaded', () => {
         selectedAutomation = automations.find(a => a.id === id);
         detectVariables(selectedAutomation.curl_content);
         detectImageParams(selectedAutomation.curl_content);
+        detectDocumentParams(selectedAutomation.curl_content);
         populateColumnDropdowns();
         renderImageUploadCards();
         mappingSection.classList.remove('hidden'); previewSection.classList.add('hidden');
@@ -165,18 +173,48 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch {}
     }
 
+    // ============ DOCUMENT (PDF) DETECTION ============
+    function detectDocumentParams(curl) {
+        detectedDocuments = [];
+        uploadedDocuments = {};
+        try {
+            const m = curl.match(/\{[\s\S]*\}/); if (!m) return;
+            const body = JSON.parse(m[0]);
+            if (body.template && body.template.components) {
+                let docNum = 1;
+                body.template.components.forEach(comp => {
+                    if (comp.parameters) {
+                        comp.parameters.forEach(param => {
+                            if (param.type === 'document') {
+                                detectedDocuments.push({
+                                    index: String(docNum),
+                                    componentType: comp.type,
+                                    defaultUrl: (param.document && param.document.link) || ''
+                                });
+                                docNum++;
+                            }
+                        });
+                    }
+                });
+            }
+        } catch {}
+    }
+
     // ============ IMAGE UPLOAD UI ============
     const imageUploadSection = document.getElementById('imageUploadSection');
     const imageUploadContainer = document.getElementById('imageUploadContainer');
     const MAX_IMG_SIZE = 5 * 1024 * 1024; // 5 MB
-    const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
-    const ALLOWED_IMG_EXTS = ['.jpg', '.jpeg', '.png', '.webp'];
+    const MAX_DOC_SIZE = 10 * 1024 * 1024; // 10 MB
+    const ALLOWED_IMG_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+    const ALLOWED_IMG_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.pdf'];
+    const ALLOWED_DOC_TYPES = ['application/pdf'];
+    const ALLOWED_DOC_EXTS = ['.pdf'];
 
     function renderImageUploadCards() {
         if (!imageUploadSection || !imageUploadContainer) return;
         imageUploadContainer.innerHTML = '';
 
-        if (detectedImages.length === 0) {
+        if (detectedImages.length === 0 && detectedDocuments.length === 0) {
             imageUploadSection.classList.add('hidden');
             return;
         }
@@ -191,10 +229,19 @@ document.addEventListener('DOMContentLoaded', () => {
             imageUploadContainer.appendChild(card);
             attachImageCardListeners(card, img.index);
         });
+
+        detectedDocuments.forEach(doc => {
+            const card = document.createElement('div');
+            card.className = 'img-upload-card';
+            card.id = 'docCard-' + doc.index;
+            card.innerHTML = renderEmptyDocCard(doc.index);
+            imageUploadContainer.appendChild(card);
+            attachDocCardListeners(card, doc.index);
+        });
     }
 
     function renderEmptyImageCard(idx) {
-        return '<span class="img-upload-label">Image ' + idx + '</span>' +
+        return '<span class="img-upload-label">Media ' + idx + '</span>' +
             '<div class="img-upload-icon">' +
                 '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
                     '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>' +
@@ -204,34 +251,183 @@ document.addEventListener('DOMContentLoaded', () => {
             '</div>' +
             '<button type="button" class="img-upload-btn" data-img-idx="' + idx + '">' +
                 '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
-                'Upload Image' +
+                'Upload Media' +
             '</button>' +
-            '<span class="img-upload-hint">JPG, PNG or WEBP · Max 5 MB</span>' +
-            '<input type="file" class="hidden" accept=".jpg,.jpeg,.png,.webp" data-img-idx="' + idx + '">';
+            '<span class="img-upload-hint">JPG, PNG, WEBP (5 MB) or PDF (10 MB)</span>' +
+            '<input type="file" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf" data-img-idx="' + idx + '">';
     }
 
-    function renderUploadedImageCard(idx, fileName, fileSize, thumbnailSrc) {
-        const sizeStr = fileSize < 1024 ? fileSize + ' B' : (fileSize / 1024).toFixed(1) + ' KB';
-        return '<span class="img-upload-label">Image ' + idx + '</span>' +
+    // ============ DOCUMENT (PDF) UPLOAD UI ============
+    function renderEmptyDocCard(idx) {
+        return '<span class="img-upload-label">PDF Document ' + idx + '</span>' +
+            '<div class="img-upload-icon">' +
+                '<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' +
+                    '<polyline points="14 2 14 8 20 8"></polyline>' +
+                    '<line x1="16" y1="13" x2="8" y2="13"></line>' +
+                    '<line x1="16" y1="17" x2="8" y2="17"></line>' +
+                    '<polyline points="10 9 9 9 8 9"></polyline>' +
+                '</svg>' +
+            '</div>' +
+            '<button type="button" class="doc-upload-btn img-upload-btn" data-doc-idx="' + idx + '">' +
+                '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>' +
+                'Upload PDF' +
+            '</button>' +
+            '<span class="img-upload-hint">PDF only · Max 10 MB</span>' +
+            '<input type="file" class="hidden" accept=".pdf" data-doc-idx="' + idx + '">';
+    }
+
+    function renderUploadedDocCard(idx, fileName, fileSize) {
+        const sizeStr = fileSize < 1024 ? fileSize + ' B' : fileSize < 1048576 ? (fileSize / 1024).toFixed(1) + ' KB' : (fileSize / 1048576).toFixed(2) + ' MB';
+        return '<span class="img-upload-label">PDF Document ' + idx + '</span>' +
             '<div class="img-check-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>' +
             '<div class="img-preview-wrap">' +
-                '<img src="' + escapeHTML(thumbnailSrc) + '" class="img-thumbnail" alt="' + escapeHTML(fileName) + '">' +
+                '<div class="doc-icon-preview">' +
+                    '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                        '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' +
+                        '<polyline points="14 2 14 8 20 8"></polyline>' +
+                        '<line x1="16" y1="13" x2="8" y2="13"></line>' +
+                        '<line x1="16" y1="17" x2="8" y2="17"></line>' +
+                    '</svg>' +
+                '</div>' +
                 '<div class="img-file-info">' +
                     '<div class="img-file-name">' + escapeHTML(fileName) + '</div>' +
                     '<div class="img-file-size">' + sizeStr + '</div>' +
                 '</div>' +
                 '<div class="img-actions">' +
-                    '<button type="button" class="img-change-btn" data-img-idx="' + idx + '">Change Image</button>' +
+                    '<button type="button" class="img-change-btn doc-change-btn" data-doc-idx="' + idx + '">Change PDF</button>' +
+                    '<button type="button" class="img-remove-btn doc-remove-btn" data-doc-idx="' + idx + '">Remove</button>' +
+                '</div>' +
+            '</div>' +
+            '<input type="file" class="hidden" accept=".pdf" data-doc-idx="' + idx + '">';
+    }
+
+    function renderUploadingDocCard(idx) {
+        return '<span class="img-upload-label">PDF Document ' + idx + '</span>' +
+            '<div class="img-upload-spinner"></div>' +
+            '<span class="img-upload-status">Uploading PDF...</span>';
+    }
+
+    function attachDocCardListeners(card, idx) {
+        const uploadBtn = card.querySelector('.doc-upload-btn');
+        const fileInput = card.querySelector('input[type="file"]');
+        const changeBtn = card.querySelector('.doc-change-btn');
+        const removeBtn = card.querySelector('.doc-remove-btn');
+
+        if (uploadBtn) uploadBtn.addEventListener('click', () => fileInput.click());
+        if (changeBtn) changeBtn.addEventListener('click', () => fileInput.click());
+        if (removeBtn) removeBtn.addEventListener('click', () => removeDocument(idx));
+        if (fileInput) fileInput.addEventListener('change', (e) => { if (e.target.files.length) handleDocSelect(e.target.files[0], idx); });
+    }
+
+    async function handleDocSelect(file, idx) {
+        // Client-side validation
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        if (!ALLOWED_DOC_EXTS.includes(ext)) {
+            showDocError(idx, 'Unsupported format. Please upload a PDF file.'); return;
+        }
+        if (!ALLOWED_DOC_TYPES.includes(file.type)) {
+            showDocError(idx, 'Unsupported file type. Only PDF is allowed.'); return;
+        }
+        if (file.size > MAX_DOC_SIZE) {
+            showDocError(idx, 'PDF is too large. Please choose a file smaller than 10 MB.'); return;
+        }
+
+        const card = document.getElementById('docCard-' + idx);
+        if (!card) return;
+
+        // Show uploading state
+        card.className = 'img-upload-card uploading';
+        card.innerHTML = renderUploadingDocCard(idx);
+
+        try {
+            const base64 = await fileToBase64(file);
+
+            const response = await fetch(CONFIG.API_BASE_URL + '/api/upload/document', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({
+                    fileName: file.name,
+                    fileData: base64,
+                    mimeType: file.type,
+                    automationId: selectedAutomation ? selectedAutomation.id : ''
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                showDocError(idx, data.message || 'PDF upload failed. Please try again.');
+                return;
+            }
+
+            uploadedDocuments[idx] = {
+                fileName: file.name,
+                url: data.url,
+                size: file.size
+            };
+
+            card.className = 'img-upload-card has-image';
+            card.innerHTML = renderUploadedDocCard(idx, file.name, file.size);
+            attachDocCardListeners(card, idx);
+
+        } catch (err) {
+            showDocError(idx, 'PDF upload failed. Please try again.');
+        }
+    }
+
+    function removeDocument(idx) {
+        delete uploadedDocuments[idx];
+        const card = document.getElementById('docCard-' + idx);
+        if (card) {
+            card.className = 'img-upload-card';
+            card.innerHTML = renderEmptyDocCard(idx);
+            attachDocCardListeners(card, idx);
+        }
+    }
+
+    function showDocError(idx, msg) {
+        const card = document.getElementById('docCard-' + idx);
+        if (card) {
+            card.className = 'img-upload-card upload-error';
+            card.innerHTML = renderEmptyDocCard(idx) + '<div class="img-error-msg">' + escapeHTML(msg) + '</div>';
+            attachDocCardListeners(card, idx);
+        }
+    }
+
+    function renderUploadedImageCard(idx, fileName, fileSize, thumbnailSrc, isPdf) {
+        const sizeStr = fileSize < 1024 ? fileSize + ' B' : fileSize < 1048576 ? (fileSize / 1024).toFixed(1) + ' KB' : (fileSize / 1048576).toFixed(2) + ' MB';
+        const previewHtml = isPdf 
+            ? '<div class="doc-icon-preview">' +
+                '<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">' +
+                    '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>' +
+                    '<polyline points="14 2 14 8 20 8"></polyline>' +
+                    '<line x1="16" y1="13" x2="8" y2="13"></line>' +
+                    '<line x1="16" y1="17" x2="8" y2="17"></line>' +
+                '</svg>' +
+              '</div>'
+            : '<img src="' + escapeHTML(thumbnailSrc) + '" class="img-thumbnail" alt="' + escapeHTML(fileName) + '">';
+
+        return '<span class="img-upload-label">Media ' + idx + '</span>' +
+            '<div class="img-check-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg></div>' +
+            '<div class="img-preview-wrap">' +
+                previewHtml +
+                '<div class="img-file-info">' +
+                    '<div class="img-file-name">' + escapeHTML(fileName) + '</div>' +
+                    '<div class="img-file-size">' + sizeStr + '</div>' +
+                '</div>' +
+                '<div class="img-actions">' +
+                    '<button type="button" class="img-change-btn" data-img-idx="' + idx + '">Change</button>' +
                     '<button type="button" class="img-remove-btn" data-img-idx="' + idx + '">Remove</button>' +
                 '</div>' +
             '</div>' +
-            '<input type="file" class="hidden" accept=".jpg,.jpeg,.png,.webp" data-img-idx="' + idx + '">';
+            '<input type="file" class="hidden" accept=".jpg,.jpeg,.png,.webp,.pdf" data-img-idx="' + idx + '">';
     }
 
     function renderUploadingCard(idx) {
-        return '<span class="img-upload-label">Image ' + idx + '</span>' +
+        return '<span class="img-upload-label">Media ' + idx + '</span>' +
             '<div class="img-upload-spinner"></div>' +
-            '<span class="img-upload-status">Uploading image...</span>';
+            '<span class="img-upload-status">Uploading...</span>';
     }
 
     function attachImageCardListeners(card, idx) {
@@ -250,13 +446,18 @@ document.addEventListener('DOMContentLoaded', () => {
         // Client-side validation
         const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
         if (!ALLOWED_IMG_EXTS.includes(ext)) {
-            showImageError(idx, 'Unsupported image format. Please use JPG, PNG, or WEBP.'); return;
+            showImageError(idx, 'Unsupported format. Please use JPG, PNG, WEBP, or PDF.'); return;
         }
         if (!ALLOWED_IMG_TYPES.includes(file.type)) {
-            showImageError(idx, 'Unsupported image type.'); return;
+            showImageError(idx, 'Unsupported file type.'); return;
         }
-        if (file.size > MAX_IMG_SIZE) {
-            showImageError(idx, 'Image is too large. Please choose an image smaller than 5 MB.'); return;
+        
+        const isPdf = file.type === 'application/pdf';
+        const limit = isPdf ? MAX_DOC_SIZE : MAX_IMG_SIZE;
+        const limitStr = isPdf ? '10 MB' : '5 MB';
+
+        if (file.size > limit) {
+            showImageError(idx, 'File is too large. Please choose a file smaller than ' + limitStr + '.'); return;
         }
 
         const card = document.getElementById('imgCard-' + idx);
@@ -269,11 +470,12 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // Read file as base64
             const base64 = await fileToBase64(file);
-            // Create local thumbnail
-            const thumbUrl = URL.createObjectURL(file);
+            // Create local thumbnail if it's not a PDF
+            const thumbUrl = isPdf ? '' : URL.createObjectURL(file);
 
-            // Upload to backend
-            const response = await fetch(CONFIG.API_BASE_URL + '/api/upload/image', {
+            // Upload to backend (route appropriately based on file type)
+            const endpoint = isPdf ? '/api/upload/document' : '/api/upload/image';
+            const response = await fetch(CONFIG.API_BASE_URL + endpoint, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
                 body: JSON.stringify({
@@ -287,7 +489,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await response.json();
 
             if (!response.ok || !data.success) {
-                showImageError(idx, data.message || 'Image upload failed. Please try again.');
+                showImageError(idx, data.message || 'Upload failed. Please try again.');
                 return;
             }
 
@@ -301,11 +503,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Render success state
             card.className = 'img-upload-card has-image';
-            card.innerHTML = renderUploadedImageCard(idx, file.name, file.size, thumbUrl);
+            card.innerHTML = renderUploadedImageCard(idx, file.name, file.size, thumbUrl, isPdf);
             attachImageCardListeners(card, idx);
 
         } catch (err) {
-            showImageError(idx, 'Image upload failed. Please try again.');
+            showImageError(idx, 'Upload failed. Please try again.');
         }
     }
 
@@ -356,6 +558,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const imgIdx = detectedImages[i].index;
             if (!uploadedImages[imgIdx] || !uploadedImages[imgIdx].url) {
                 showValError('Please upload Image ' + imgIdx + ' before generating preview.'); return;
+            }
+        }
+
+        // Validate documents are uploaded
+        for (let i = 0; i < detectedDocuments.length; i++) {
+            const docIdx = detectedDocuments[i].index;
+            if (!uploadedDocuments[docIdx] || !uploadedDocuments[docIdx].url) {
+                showValError('Please upload PDF Document ' + docIdx + ' before generating preview.'); return;
             }
         }
 
@@ -431,6 +641,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert('Please upload Image ' + imgIdx + ' before starting the automation.'); return;
                 }
             }
+            // Validate documents before send
+            for (let i = 0; i < detectedDocuments.length; i++) {
+                const docIdx = detectedDocuments[i].index;
+                if (!uploadedDocuments[docIdx] || !uploadedDocuments[docIdx].url) {
+                    alert('Please upload PDF Document ' + docIdx + ' before starting the automation.'); return;
+                }
+            }
             confirmRowsCount.textContent = validRows.length + ' recipients';
             confirmAutoName.textContent  = selectedAutomation.automation_name;
             confirmSendModal.classList.remove('hidden');
@@ -453,6 +670,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     const imgIdx = detectedImages[i].index;
                     if (!uploadedImages[imgIdx] || !uploadedImages[imgIdx].url) {
                         alert('Please upload Image ' + imgIdx + ' before starting the automation.'); return;
+                    }
+                }
+                // Validate documents before send
+                for (let i = 0; i < detectedDocuments.length; i++) {
+                    const docIdx = detectedDocuments[i].index;
+                    if (!uploadedDocuments[docIdx] || !uploadedDocuments[docIdx].url) {
+                        alert('Please upload PDF Document ' + docIdx + ' before starting the automation.'); return;
                     }
                 }
                 // Both buttons have sending functionality; Get Started starts directly without asking permission again
@@ -589,14 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isMinimized) restorePopup();
             showPhase('success');
             startContinuousConfetti();
-
-            // After 3 seconds, redirect to Live Data
-            setTimeout(() => {
-                closePopup();
-                stopConfetti();
-                resetBtn();
-                window.location.href = 'livedata.html?jobId=' + apiResult.jobId;
-            }, 3000);
+            // Popup stays open with infinite confetti until user clicks DONE
         } else {
             if (isMinimized) restorePopup();
             const msg = (apiResult && apiResult.message) ? apiResult.message : 'Message delivery could not be completed.';
@@ -615,13 +832,22 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
+        // Build documentUrls map: { "1": "https://...", "2": "https://..." }
+        const documentUrlsMap = {};
+        Object.keys(uploadedDocuments).forEach(k => {
+            if (uploadedDocuments[k] && uploadedDocuments[k].url) {
+                documentUrlsMap[k] = uploadedDocuments[k].url;
+            }
+        });
+
         const response = await fetch(CONFIG.API_BASE_URL + '/api/send/execute', {
             method : 'POST',
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
             body   : JSON.stringify({
                 automationId: selectedAutomation.id,
                 rows: validRows,
-                imageUrls: Object.keys(imageUrlsMap).length > 0 ? imageUrlsMap : undefined
+                imageUrls: Object.keys(imageUrlsMap).length > 0 ? imageUrlsMap : undefined,
+                documentUrls: Object.keys(documentUrlsMap).length > 0 ? documentUrlsMap : undefined
             })
         });
 

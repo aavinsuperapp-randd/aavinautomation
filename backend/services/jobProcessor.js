@@ -11,13 +11,14 @@ const activeJobs = new Map();
 /**
  * Create a new send job with batches and rows
  */
-async function createJob({ userId, automationId, automationName, rows, templateJson, imageUrls }) {
+async function createJob({ userId, automationId, automationName, rows, templateJson, imageUrls, documentUrls }) {
     const totalRows = rows.length;
     const totalBatches = Math.ceil(totalRows / BATCH_SIZE);
 
     // Clone templateJson and update image parameters with uploaded URLs
     const finalTemplateJson = JSON.parse(JSON.stringify(templateJson));
     finalTemplateJson._image_urls = imageUrls || {};
+    finalTemplateJson._document_urls = documentUrls || {};
     if (imageUrls && Object.keys(imageUrls).length > 0) {
         let imgCount = 1;
         if (finalTemplateJson.template && finalTemplateJson.template.components) {
@@ -31,6 +32,25 @@ async function createJob({ userId, automationId, automationName, rows, templateJ
                                 param.image.link = newUrl;
                             }
                             imgCount++;
+                        }
+                    });
+                }
+            });
+        }
+    }
+    if (documentUrls && Object.keys(documentUrls).length > 0) {
+        let docCount = 1;
+        if (finalTemplateJson.template && finalTemplateJson.template.components) {
+            finalTemplateJson.template.components.forEach(comp => {
+                if (comp.parameters) {
+                    comp.parameters.forEach(param => {
+                        if (param.type === 'document') {
+                            const newUrl = documentUrls[String(docCount)];
+                            if (newUrl) {
+                                if (!param.document) param.document = {};
+                                param.document.link = newUrl;
+                            }
+                            docCount++;
                         }
                     });
                 }
@@ -200,7 +220,8 @@ async function processJob(jobId) {
 
         // Process this batch
         const imageUrls = (templateJson && templateJson._image_urls) || {};
-        await processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls);
+        const documentUrls = (templateJson && templateJson._document_urls) || {};
+        await processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls, documentUrls);
 
         // If not the last batch, wait 60 seconds
         if (i < batches.length - 1) {
@@ -246,7 +267,7 @@ async function processJob(jobId) {
 /**
  * Process a single batch
  */
-async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = {}) {
+async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = {}, documentUrls = {}) {
     logger.info(`[BATCH] Processing batch ${batch.batch_number} (${batch.total_rows} rows)`);
 
     // Update batch status
@@ -294,8 +315,9 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
             // Clone template
             const reqBody = JSON.parse(JSON.stringify(templateJson));
 
-            // Remove internal _image_urls property — must never be sent to AskEVA
+            // Remove internal _image_urls and _document_urls properties — must never be sent to AskEVA
             delete reqBody._image_urls;
+            delete reqBody._document_urls;
 
             // Replace "to"
             reqBody.to = row.whatsapp_number;
@@ -328,6 +350,26 @@ async function processBatch(batch, templateJson, ASKEVA_URL, jobId, imageUrls = 
                                         logger.info(`[ASK-EVA] Image ${imgCount} URL replaced: ${uploadedUrl.substring(0, 60)}...`);
                                     }
                                     imgCount++;
+                                }
+                            });
+                        }
+                    });
+                }
+
+                // Replace document parameters across ALL components using documentUrls
+                if (documentUrls && Object.keys(documentUrls).length > 0) {
+                    let docCount = 1;
+                    reqBody.template.components.forEach(comp => {
+                        if (comp.parameters) {
+                            comp.parameters.forEach(param => {
+                                if (param.type === 'document') {
+                                    const uploadedUrl = documentUrls[String(docCount)];
+                                    if (uploadedUrl) {
+                                        if (!param.document) param.document = {};
+                                        param.document.link = uploadedUrl;
+                                        logger.info(`[ASK-EVA] Document ${docCount} URL replaced: ${uploadedUrl.substring(0, 60)}...`);
+                                    }
+                                    docCount++;
                                 }
                             });
                         }
